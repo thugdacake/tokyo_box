@@ -4,7 +4,7 @@
 ]]
 
 -- Carregar configuração
-local Config = require 'config'
+Config = {}
 
 -- Exportar configuração
 exports('GetConfig', function()
@@ -15,6 +15,32 @@ end)
 CreateThread(function()
     print("^2[Tokyo Box] Inicializando...^0")
     
+    -- Carregar configuração do arquivo
+    local success, result = pcall(function()
+        return LoadResourceFile(GetCurrentResourceName(), 'config.lua')
+    end)
+    
+    if not success or not result then
+        print("^1[Tokyo Box] Erro ao carregar config.lua^0")
+        return
+    end
+    
+    -- Executar configuração
+    local fn, err = load(result)
+    if not fn then
+        print("^1[Tokyo Box] Erro ao compilar config.lua: " .. tostring(err) .. "^0")
+        return
+    end
+    
+    local configResult = fn()
+    if type(configResult) == 'table' then
+        Config = configResult
+        print("^2[Tokyo Box] Configuração carregada com sucesso^0")
+    else
+        print("^1[Tokyo Box] Erro: config.lua não retornou uma tabela^0")
+        return
+    end
+    
     -- Verificar dependências
     if not Config.Dependencies then
         print("^1[Tokyo Box] Erro: Dependências não configuradas^0")
@@ -22,7 +48,7 @@ CreateThread(function()
     end
     
     for _, dependency in ipairs(Config.Dependencies) do
-        if not GetResourceState(dependency) == 'started' then
+        if GetResourceState(dependency) ~= 'started' then
             print("^1[Tokyo Box] Erro: Dependência " .. dependency .. " não encontrada^0")
             return
         end
@@ -33,31 +59,13 @@ end)
 
 local QBCore = exports['qb-core']:GetCoreObject()
 
--- Configurações
-local config = {
-    debug = false,
-    defaultVolume = 0.5,
-    minVolume = 0.0,
-    maxVolume = 1.0,
-    defaultTheme = 'dark',
-    defaultLocale = 'pt-BR',
-    permissions = {
-        play = true,
-        pause = true,
-        stop = true,
-        volume = true,
-        playlist = true,
-        search = true
-    }
-}
-
 -- Estado
 local isInitialized = false
 local players = {}
 
 -- Funções auxiliares
 local function log(message)
-    if config.debug then
+    if Config.Debug and Config.Debug.enabled then
         print("^3[DEBUG] Tokyo Box - Server: " .. message .. "^7")
     end
 end
@@ -71,7 +79,7 @@ local function initialize()
             CREATE TABLE IF NOT EXISTS tokyo_box_playlists (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
-                tracks JSON NOT NULL,
+                tracks TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
@@ -80,8 +88,8 @@ local function initialize()
         MySQL.query([[
             CREATE TABLE IF NOT EXISTS tokyo_box_settings (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                key VARCHAR(255) NOT NULL UNIQUE,
-                value JSON NOT NULL,
+                `key` VARCHAR(255) NOT NULL UNIQUE,
+                `value` TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             )
@@ -95,7 +103,7 @@ end
 -- Eventos
 RegisterNetEvent('tokyo_box:server:getConfig', function()
     local source = source
-    TriggerClientEvent('tokyo_box:client:updateConfig', source, config)
+    TriggerClientEvent('tokyo_box:client:updateConfig', source, Config)
 end)
 
 RegisterNetEvent('tokyo_box:server:getPlaylists', function()

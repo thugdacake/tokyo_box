@@ -4,11 +4,26 @@
     Versão: 1.0.0
 ]]
 
--- Carregar configurações
-local Config = exports['tokyo_box']:GetConfig()
+-- Carregar configuração
+local Config = nil
+
+-- Função para carregar configuração
+local function LoadConfig()
+    local success, result = pcall(function()
+        return exports['tokyo_box']:GetConfig()
+    end)
+    
+    if not success or not result then
+        print("^1[Tokyo Box] Erro ao carregar configuração do YouTube^0")
+        return false
+    end
+    
+    Config = result
+    return true
+end
 
 -- Verificar configuração
-if not Config or not Config.YouTube or not Config.YouTube.apiKey then
+if not LoadConfig() or not Config or not Config.YouTube or not Config.YouTube.apiKey then
     print("^1[Tokyo Box] Erro: Configuração do YouTube não encontrada^0")
     return
 end
@@ -152,7 +167,7 @@ end
 
 -- Funções auxiliares
 local function log(message)
-    if Config.Debug then
+    if Config.Debug and Config.Debug.enabled then
         print("^3[DEBUG] Tokyo Box - YouTube API: " .. message .. "^7")
     end
 end
