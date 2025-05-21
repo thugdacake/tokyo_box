@@ -4,97 +4,120 @@
 ]]
 
 local Config = require 'config'
+local QBCore = exports['qb-core']:GetCoreObject()
 
 -- Temas disponíveis
-local Themes = {
+local themes = {
+    default = {
+        primary = '#2196F3',
+        secondary = '#1976D2',
+        background = '#121212',
+        surface = '#1E1E1E',
+        text = '#FFFFFF',
+        textSecondary = '#B0B0B0',
+        error = '#F44336',
+        success = '#4CAF50',
+        warning = '#FFC107',
+        info = '#2196F3'
+    },
     dark = {
-        primary = "#FF0000",
-        secondary = "#00FF00",
-        background = "#000000",
-        text = "#FFFFFF",
-        border = "#333333",
-        hover = "#444444",
-        shadow = "rgba(0, 0, 0, 0.5)",
-        borderRadius = "4px",
-        transitionSpeed = "0.3s"
+        primary = '#BB86FC',
+        secondary = '#3700B3',
+        background = '#121212',
+        surface = '#1E1E1E',
+        text = '#FFFFFF',
+        textSecondary = '#B0B0B0',
+        error = '#CF6679',
+        success = '#03DAC6',
+        warning = '#FFC107',
+        info = '#BB86FC'
     },
     light = {
-        primary = "#FF0000",
-        secondary = "#00FF00",
-        background = "#FFFFFF",
-        text = "#000000",
-        border = "#CCCCCC",
-        hover = "#EEEEEE",
-        shadow = "rgba(0, 0, 0, 0.2)",
-        borderRadius = "4px",
-        transitionSpeed = "0.3s"
+        primary = '#6200EE',
+        secondary = '#3700B3',
+        background = '#FFFFFF',
+        surface = '#F5F5F5',
+        text = '#000000',
+        textSecondary = '#757575',
+        error = '#B00020',
+        success = '#03DAC6',
+        warning = '#FFC107',
+        info = '#6200EE'
     }
 }
 
--- Função para aplicar tema
-local function ApplyTheme(themeName)
-    if not Themes[themeName] then
-        themeName = Config.DefaultTheme or "dark"
+-- Tema atual
+local currentTheme = 'default'
+
+-- Funções auxiliares
+local function applyTheme(theme)
+    if not themes[theme] then
+        print("^1[ERRO] Tokyo Box - Theme: Tema '" .. theme .. "' não encontrado^7")
+        return false
     end
     
-    local theme = Themes[themeName]
-    local css = string.format([[
-        :root {
-            --primary-color: %s;
-            --secondary-color: %s;
-            --background-color: %s;
-            --text-color: %s;
-            --border-color: %s;
-            --hover-color: %s;
-            --shadow-color: %s;
-            --border-radius: %s;
-            --transition-speed: %s;
-        }
-    ]], 
-    theme.primary,
-    theme.secondary,
-    theme.background,
-    theme.text,
-    theme.border,
-    theme.hover,
-    theme.shadow,
-    theme.borderRadius,
-    theme.transitionSpeed)
-    
+    currentTheme = theme
     SendNUIMessage({
-        type = "applyTheme",
-        css = css
+        type = 'updateTheme',
+        theme = themes[theme]
     })
+    
+    return true
 end
 
--- Função para obter tema atual
-local function GetCurrentTheme()
-    return Config.DefaultTheme or "dark"
+local function getTheme()
+    return themes[currentTheme]
 end
 
--- Função para listar temas disponíveis
-local function ListThemes()
-    local themes = {}
-    for name, _ in pairs(Themes) do
-        table.insert(themes, name)
+local function getThemeColor(color)
+    local theme = getTheme()
+    return theme[color] or theme.primary
+end
+
+-- Eventos
+RegisterNetEvent('tokyo_box:client:setTheme', function(theme)
+    if applyTheme(theme) then
+        TriggerEvent('tokyo_box:client:notify', 'Tema alterado com sucesso', 'success')
+    else
+        TriggerEvent('tokyo_box:client:notify', 'Erro ao alterar tema', 'error')
     end
-    return themes
-end
+end)
 
--- Exportar funções
-exports("ApplyTheme", ApplyTheme)
-exports("GetCurrentTheme", GetCurrentTheme)
-exports("ListThemes", ListThemes)
+-- Comandos
+RegisterCommand('tokyoboxtheme', function(source, args)
+    if not args[1] then
+        TriggerEvent('tokyo_box:client:notify', 'Tema atual: ' .. currentTheme, 'info')
+        return
+    end
+    
+    local theme = args[1]
+    if applyTheme(theme) then
+        TriggerEvent('tokyo_box:client:notify', 'Tema alterado para: ' .. theme, 'success')
+    else
+        TriggerEvent('tokyo_box:client:notify', 'Tema não encontrado: ' .. theme, 'error')
+    end
+end)
 
--- Aplicar tema padrão ao iniciar
-Citizen.CreateThread(function()
-    Wait(1000) -- Aguardar carregamento da NUI
-    ApplyTheme(GetCurrentTheme())
+-- Exportações
+exports('GetTheme', getTheme)
+exports('GetThemeColor', getThemeColor)
+exports('SetTheme', applyTheme)
+exports('AddTheme', function(name, theme)
+    if type(theme) ~= 'table' then return false end
+    
+    themes[name] = theme
+    return true
+end)
+
+-- Inicialização
+CreateThread(function()
+    applyTheme(currentTheme)
 end)
 
 return {
-    ApplyTheme = ApplyTheme,
-    GetCurrentTheme = GetCurrentTheme,
-    ListThemes = ListThemes,
-    Themes = Themes
+    Themes = themes,
+    GetTheme = getTheme,
+    GetThemeColor = getThemeColor,
+    SetTheme = applyTheme,
+    AddTheme = exports.AddTheme
 } 

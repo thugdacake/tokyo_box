@@ -5,6 +5,7 @@
 ]]
 
 local Config = require 'config'
+local QBCore = exports['qb-core']:GetCoreObject()
 
 -- API do YouTube
 local YouTubeAPI = {
@@ -20,6 +21,13 @@ local videoCache = {}
 local lastRequest = 0
 local consecutiveErrors = 0
 local CacheCleanupInterval = 3600 -- 1 hora em segundos
+local cache = {}
+local lastQuotaReset = os.time()
+
+-- Cache de requisições
+local requestCache = {}
+local requestCount = {}
+local lastReset = os.time()
 
 -- Função de log
 local function Log(level, message)
@@ -82,184 +90,307 @@ local function CleanExpiredCache()
     end
 end
 
--- Função para verificar quota
-local function checkQuota()
-    local now = os.time()
-    
-    -- Reset diário
-    if now - YouTubeAPI.lastReset > 24 * 60 * 60 then
+-- Funções auxiliares
+local function resetQuota()
+    local currentTime = os.time()
+    if currentTime - lastQuotaReset >= 86400 then -- 24 horas
         YouTubeAPI.quotaUsed = 0
-        YouTubeAPI.lastReset = now
+        YouTubeAPI.lastReset = currentTime
+    end
+end
+
+local function checkQuota()
+    resetQuota()
+    return YouTubeAPI.quotaUsed < YouTubeAPI.quotaLimit
+end
+
+local function updateQuota(cost)
+    YouTubeAPI.quotaUsed = YouTubeAPI.quotaUsed + cost
+end
+
+local function getVideoId(url)
+    if not url then return nil end
+    
+    -- Verificar se é um ID direto
+    if string.len(url) == 11 then
+        return url
     end
     
+    -- Extrair ID da URL
+    local patterns = {
+        "youtube.com/watch%?v=([^&]+)",
+        "youtu.be/([^?]+)",
+        "youtube.com/embed/([^?]+)",
+        "youtube.com/v/([^?]+)"
+    }
+    
+    for _, pattern in ipairs(patterns) do
+        local id = string.match(url, pattern)
+        if id then return id end
+    end
+    
+    return nil
+end
+
+local function formatDuration(duration)
+    local hours = string.match(duration, "(%d+)H")
+    local minutes = string.match(duration, "(%d+)M")
+    local seconds = string.match(duration, "(%d+)S")
+    
+    hours = hours and tonumber(hours) or 0
+    minutes = minutes and tonumber(minutes) or 0
+    seconds = seconds and tonumber(seconds) or 0
+    
+    return hours * 3600 + minutes * 60 + seconds
+end
+
+-- Funções auxiliares
+local function log(message)
+    if Config.Debug then
+        print("^3[DEBUG] Tokyo Box - YouTube API: " .. message .. "^7")
+    end
+end
+
+local function checkRateLimit(source)
+    local currentTime = os.time()
+    
+    -- Resetar contador a cada minuto
+    if currentTime - lastReset >= Config.Security.rateLimit.window then
+        requestCount = {}
+        lastReset = currentTime
+    end
+    
+    -- Incrementar contador
+    requestCount[source] = (requestCount[source] or 0) + 1
+    
     -- Verificar limite
-    if YouTubeAPI.quotaUsed >= YouTubeAPI.quotaLimit then
+    if requestCount[source] > Config.Security.rateLimit.max then
         return false
     end
     
     return true
 end
 
--- Função para fazer requisição à API
-local function MakeRequest(endpoint, params)
-    if not YouTubeAPI.apiKey or YouTubeAPI.apiKey == "" then
-        Log("error", "API key do YouTube não configurada")
-        return nil
+local function isAllowedDomain(url)
+    for _, domain in ipairs(Config.Security.allowedDomains) do
+        if string.find(url, domain) then
+            return true
+        end
     end
-
-    -- Verificar intervalo entre requisições
-    local now = os.time()
-    if now - lastRequest < Config.YouTube.RequestInterval / 1000 then
-        Wait(Config.YouTube.RequestInterval)
-    end
-    lastRequest = now
-
-    -- Adicionar API key aos parâmetros
-    params.key = YouTubeAPI.apiKey
-
-    -- Construir URL
-    local url = Config.API.BaseURL .. endpoint
-    local queryString = ""
-    for k, v in pairs(params) do
-        queryString = queryString .. k .. "=" .. v .. "&"
-    end
-    url = url .. "?" .. queryString:sub(1, -2)
-
-    -- Fazer requisição
-    local response = nil
-    local attempts = 0
-    while attempts < Config.System.ErrorRetryCount do
-        response = PerformHttpRequest(url, function(err, text, headers)
-            if err then
-                if not HandleError(err, "MakeRequest") then
-                    return nil
-                end
-                attempts = attempts + 1
-                Wait(Config.System.ErrorRetryDelay)
-            else
-                consecutiveErrors = 0
-                return text
-            end
-        end)
-        if response then break end
-    end
-
-    return response
+    return false
 end
 
--- Função para buscar vídeo
-function YouTubeAPI.SearchVideo(query)
+-- Funções da API
+local function searchVideos(query, cb)
     if not query or query == "" then
-        return false, {error = "Query inválida"}
-    end
-    
-    -- Verificar quota
-    if not checkQuota() then
-        return false, {error = "Limite de quota excedido"}
+        if cb then
+            cb({ error = "Query inválida" })
+        end
+        return
     end
     
     -- Verificar cache
-    if videoCache[query] and GetGameTimer() - videoCache[query].timestamp < Config.YouTube.CacheDuration * 1000 then
-        YouTubeAPI.quotaUsed = YouTubeAPI.quotaUsed + 100
-        return true, videoCache[query].data
+    local cacheKey = "search:" .. query
+    if Config.Cache.enabled and requestCache[cacheKey] then
+        local cache = requestCache[cacheKey]
+        if os.time() - cache.time < Config.Cache.ttl then
+            if cb then
+                cb(cache.data)
+            end
+            return
+        end
     end
     
-    -- Fazer requisição
-    local response = MakeRequest(Config.API.Endpoints.Search, {
-        part = "snippet",
-        q = query,
-        type = "video",
-        maxResults = 10
-    })
-
-    if not response then return false, {error = "Erro ao buscar vídeo"} end
-
-    -- Processar resposta
-    local data = json.decode(response)
-    if not data or not data.items or #data.items == 0 then
-        return false, {error = "Nenhum vídeo encontrado"}
-    end
-
-    -- Salvar em cache
-    videoCache[query] = {
-        data = data.items[1],
-        timestamp = GetGameTimer()
-    }
-
-    YouTubeAPI.quotaUsed = YouTubeAPI.quotaUsed + 100
-    return true, data.items[1]
+    -- Fazer requisição à API
+    local url = string.format("%s/search?part=snippet&q=%s&type=video&maxResults=%d&key=%s",
+        Config.API.baseUrl,
+        query,
+        Config.API.maxResults,
+        Config.API.key
+    )
+    
+    PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
+        if errorCode ~= 200 then
+            if cb then
+                cb({ error = "Erro na API" })
+            end
+            return
+        end
+        
+        local result = json.decode(resultData)
+        if not result or not result.items then
+            if cb then
+                cb({ error = "Erro ao processar resultados" })
+            end
+            return
+        end
+        
+        -- Processar resultados
+        local videos = {}
+        for _, item in ipairs(result.items) do
+            if item.id and item.id.videoId then
+                table.insert(videos, {
+                    id = item.id.videoId,
+                    title = item.snippet.title,
+                    thumbnail = item.snippet.thumbnails.default.url,
+                    duration = "0:00" -- Duração precisa de outra requisição
+                })
+            end
+        end
+        
+        -- Salvar no cache
+        if Config.Cache.enabled then
+            requestCache[cacheKey] = {
+                time = os.time(),
+                data = videos
+            }
+            
+            -- Limpar cache antigo
+            local count = 0
+            for k, v in pairs(requestCache) do
+                count = count + 1
+                if count > Config.Cache.maxSize then
+                    requestCache[k] = nil
+                end
+            end
+        end
+        
+        if cb then
+            cb(videos)
+        end
+    end, "GET", "", { ["Content-Type"] = "application/json" })
 end
 
--- Função para obter detalhes do vídeo
-function YouTubeAPI.GetVideoDetails(videoId)
+local function getVideoDetails(videoId, cb)
     if not videoId or videoId == "" then
-        return false, {error = "ID do vídeo inválido"}
-    end
-    
-    -- Verificar quota
-    if not checkQuota() then
-        return false, {error = "Limite de quota excedido"}
+        if cb then
+            cb({ error = "ID do vídeo inválido" })
+        end
+        return
     end
     
     -- Verificar cache
-    if videoCache[videoId] and GetGameTimer() - videoCache[videoId].timestamp < Config.YouTube.CacheDuration * 1000 then
-        YouTubeAPI.quotaUsed = YouTubeAPI.quotaUsed + 1
-        return true, videoCache[videoId].data
+    local cacheKey = "video:" .. videoId
+    if Config.Cache.enabled and requestCache[cacheKey] then
+        local cache = requestCache[cacheKey]
+        if os.time() - cache.time < Config.Cache.ttl then
+            if cb then
+                cb(cache.data)
+            end
+            return
+        end
     end
     
-    -- Fazer requisição
-    local response = MakeRequest(Config.API.Endpoints.Video, {
-        part = "snippet,contentDetails",
-        id = videoId
-    })
-
-    if not response then return false, {error = "Erro ao buscar detalhes do vídeo"} end
-
-    -- Processar resposta
-    local data = json.decode(response)
-    if not data or not data.items or #data.items == 0 then
-        return false, {error = "Nenhum vídeo encontrado"}
-    end
-
-    -- Salvar em cache
-    videoCache[videoId] = {
-        data = data.items[1],
-        timestamp = GetGameTimer()
-    }
-
-    YouTubeAPI.quotaUsed = YouTubeAPI.quotaUsed + 1
-    return true, data.items[1]
+    -- Fazer requisição à API
+    local url = string.format("%s/videos?part=contentDetails,snippet&id=%s&key=%s",
+        Config.API.baseUrl,
+        videoId,
+        Config.API.key
+    )
+    
+    PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
+        if errorCode ~= 200 then
+            if cb then
+                cb({ error = "Erro na API" })
+            end
+            return
+        end
+        
+        local result = json.decode(resultData)
+        if not result or not result.items or #result.items == 0 then
+            if cb then
+                cb({ error = "Erro ao processar resultados" })
+            end
+            return
+        end
+        
+        -- Processar resultado
+        local video = result.items[1]
+        local details = {
+            id = video.id,
+            title = video.snippet.title,
+            thumbnail = video.snippet.thumbnails.default.url,
+            duration = video.contentDetails.duration
+        }
+        
+        -- Salvar no cache
+        if Config.Cache.enabled then
+            requestCache[cacheKey] = {
+                time = os.time(),
+                data = details
+            }
+            
+            -- Limpar cache antigo
+            local count = 0
+            for k, v in pairs(requestCache) do
+                count = count + 1
+                if count > Config.Cache.maxSize then
+                    requestCache[k] = nil
+                end
+            end
+        end
+        
+        if cb then
+            cb(details)
+        end
+    end, "GET", "", { ["Content-Type"] = "application/json" })
 end
 
--- Função para validar ID do YouTube
-function YouTubeAPI.ValidateId(id, type)
-    if not id or id == '' then
-        return false, 'ID inválido'
+-- Eventos
+RegisterNetEvent("tokyo_box:search")
+AddEventHandler("tokyo_box:search", function(query)
+    local source = source
+    
+    -- Verificar limite de requisições
+    if not checkRateLimit(source) then
+        TriggerClientEvent("tokyo_box:searchResults", source, { error = "Limite de requisições excedido" })
+        return
     end
     
-    if type == 'video' then
-        return id:match('^[%w_-]{11}$') ~= nil
-    elseif type == 'playlist' then
-        return id:match('^[%w_-]{34}$') ~= nil
-    end
-    
-    return false, 'Tipo inválido'
-end
+    -- Buscar vídeos
+    searchVideos(query, function(results)
+        TriggerClientEvent("tokyo_box:searchResults", source, results)
+    end)
+end)
 
--- Função para obter informações da quota
-function YouTubeAPI.GetQuotaInfo()
+RegisterNetEvent("tokyo_box:getVideoDetails")
+AddEventHandler("tokyo_box:getVideoDetails", function(videoId)
+    local source = source
+    
+    -- Verificar limite de requisições
+    if not checkRateLimit(source) then
+        TriggerClientEvent("tokyo_box:videoDetails", source, { error = "Limite de requisições excedido" })
+        return
+    end
+    
+    -- Buscar detalhes do vídeo
+    getVideoDetails(videoId, function(details)
+        TriggerClientEvent("tokyo_box:videoDetails", source, details)
+    end)
+end)
+
+-- Exportações
+exports('SearchVideos', searchVideos)
+exports('GetVideoDetails', getVideoDetails)
+exports('GetVideoId', getVideoId)
+exports('GetQuotaUsed', function() return YouTubeAPI.quotaUsed end)
+exports('GetQuotaLimit', function() return YouTubeAPI.quotaLimit end)
+exports('GetQuotaInfo', function()
     return {
         used = YouTubeAPI.quotaUsed,
         limit = YouTubeAPI.quotaLimit,
         resetIn = YouTubeAPI.quotaLimit - YouTubeAPI.quotaUsed
     }
-end
-
--- Função para resetar quota
-function YouTubeAPI.ResetQuota()
+end)
+exports('ResetQuota', function()
     YouTubeAPI.quotaUsed = 0
     YouTubeAPI.lastReset = os.time()
-end
+end)
+exports('ClearCache', function()
+    requestCache = {}
+    requestCount = {}
+    lastReset = os.time()
+end)
 
 -- Inicialização
 Citizen.CreateThread(function()
@@ -300,15 +431,19 @@ Citizen.CreateThread(function()
     end)
 end)
 
--- Exportar funções
-exports("SearchVideo", YouTubeAPI.SearchVideo)
-exports("GetVideoDetails", YouTubeAPI.GetVideoDetails)
-
 -- Adicionar limpeza periódica do cache
 Citizen.CreateThread(function()
     while true do
         Wait(CacheCleanupInterval * 1000)
         CleanExpiredCache()
+    end
+end)
+
+-- Inicialização
+CreateThread(function()
+    while true do
+        Wait(60000) -- Verificar a cada minuto
+        resetQuota()
     end
 end)
 

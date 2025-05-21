@@ -22,6 +22,8 @@ if not success then
     return
 end
 
+local QBCore = exports['qb-core']:GetCoreObject()
+
 -- Cache para rate limiting
 local rateLimits = {}
 local QUOTA_LIMIT = 10000 -- Quota diária da API
@@ -65,95 +67,104 @@ local function Log(level, message)
     print(prefix .. " " .. message)
 end
 
--- Validar dependências
-local function ValidateDependencies()
-    local dependencies = {
-        {name = "qbx_core", required = true},
-        {name = "oxmysql", required = true}
+-- Funções auxiliares
+local function log(message)
+    if Config.Debug then
+        print("^3[DEBUG] Tokyo Box - Init: " .. message .. "^7")
+    end
+end
+
+-- Função de inicialização
+local function initialize()
+    -- Verificar dependências
+    local requiredDeps = {
+        'qb-core',
+        'oxmysql'
     }
     
-    local missing = {}
+    local optionalDeps = {
+        'ox_lib'
+    }
     
-    for _, dep in ipairs(dependencies) do
-        local state = GetResourceState(dep.name)
-        if not state:find("start") then
-            table.insert(missing, dep.name)
-            if dep.required then
-                Log("error", string.format("Dependência obrigatória não encontrada: %s", dep.name))
-            else
-                Log("warn", string.format("Dependência opcional não encontrada: %s", dep.name))
-            end
+    for _, dep in ipairs(requiredDeps) do
+        if not GetResourceState(dep) == 'started' then
+            log("Dependência obrigatória não encontrada: " .. dep)
+            return false
         end
     end
     
-    return #missing == 0
-end
-
--- Inicialização segura
-local function initializeServer()
-    Log("info", "Iniciando Tokyo Box...")
-    
-    -- Validar dependências
-    if not ValidateDependencies() then
-        Log("error", "Falha na inicialização: dependências ausentes")
-        return false
+    for _, dep in ipairs(optionalDeps) do
+        if not GetResourceState(dep) == 'started' then
+            log("Dependência opcional não encontrada: " .. dep)
+        end
     end
     
-    -- Verificar se o MySQL está disponível
-    if not MySQL then
-        Log("error", "MySQL não está disponível")
+    -- Verificar API key
+    if not Config.API.key or Config.API.key == "" then
+        log("API key não configurada")
         return false
     end
     
     -- Inicializar banco de dados
-    Log("info", "Inicializando banco de dados...")
-    local success, error = pcall(function()
-        return Database.CreateTables()
+    exports['tokyo_box']:InitializeDatabase()
+    
+    -- Carregar configurações
+    exports['tokyo_box']:GetSetting('config', function(config)
+        if config then
+            for k, v in pairs(config) do
+                Config[k] = v
+            end
+        end
     end)
     
-    if not success or not error then
-        Log("error", "Falha ao criar tabelas do banco de dados: " .. tostring(error))
-        return false
-    end
-    
-    -- Verificar integridade
-    Log("info", "Verificando integridade do banco de dados...")
-    success, error = pcall(function()
-        return Database.VerifyIntegrity()
-    end)
-    
-    if not success or not error then
-        Log("error", "Falha na verificação de integridade: " .. tostring(error))
-        return false
-    end
-    
-    -- Inicializar API do YouTube
-    Log("info", "Inicializando API do YouTube...")
-    if not YouTubeAPI or not YouTubeAPI.isInitialized then
-        Log("error", "Falha ao inicializar API do YouTube")
-        return false
-    end
-    
-    -- Registrar comandos de debug
-    RegisterCommand("tokyobox_spawnBox", function(source, args, raw)
-        if source == 0 then
-            Log("warn", "Comando executado pelo console")
-            return
-        end
-        TriggerClientEvent("tokyo_box:spawnSpeaker", source)
-    end, true)
-    
-    RegisterCommand("tokyobox_btToggle", function(source, args, raw)
-        if source == 0 then
-            Log("warn", "Comando executado pelo console")
-            return
-        end
-        TriggerClientEvent("tokyo_box:btToggle", source)
-    end, true)
-    
-    Log("info", "Tokyo Box inicializado com sucesso!")
+    log("Inicialização concluída")
     return true
 end
+
+-- Eventos
+RegisterNetEvent('tokyo_box:server:getConfig', function()
+    local source = source
+    TriggerClientEvent('tokyo_box:client:updateConfig', source, Config)
+end)
+
+RegisterNetEvent('tokyo_box:server:saveConfig', function(newConfig)
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.admin then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para salvar configurações"
+        })
+        return
+    end
+    
+    -- Salvar configurações
+    exports['tokyo_box']:SetSetting('config', newConfig, function()
+        -- Atualizar configurações
+        for k, v in pairs(newConfig) do
+            Config[k] = v
+        end
+        
+        -- Notificar clientes
+        TriggerClientEvent('tokyo_box:client:updateConfig', -1, Config)
+        
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "success",
+            message = "Configurações salvas"
+        })
+    end)
+end)
+
+-- Inicialização
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    if not initialize() then
+        log("Falha na inicialização")
+        StopResource(resourceName)
+    end
+end)
 
 -- Eventos do servidor
 RegisterNetEvent('tokyo:server:initialize', function()
@@ -166,7 +177,7 @@ RegisterNetEvent('tokyo:server:initialize', function()
     -- Inicialização com timeout
     local success = pcall(function()
         SetTimeout(5000, function()
-            if not initializeServer() then
+            if not initialize() then
                 TriggerClientEvent('tokyo:client:notification', source, 'error', 'Falha ao inicializar servidor')
             end
         end)
@@ -204,4 +215,5 @@ exports('getQuotaInfo', function(source)
 end)
 
 -- Exportar função de log
-exports("Log", Log) 
+exports("Log", Log)
+exports('Initialize', initialize) 

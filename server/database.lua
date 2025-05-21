@@ -125,7 +125,7 @@ function Database.CreateTables()
                 CREATE TABLE IF NOT EXISTS tokyo_box_playlists (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    created_by VARCHAR(50) NOT NULL,
+                    tracks JSON NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
@@ -137,12 +137,13 @@ function Database.CreateTables()
                 CREATE TABLE IF NOT EXISTS tokyo_box_tracks (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     playlist_id INT NOT NULL,
-                    video_id VARCHAR(50) NOT NULL,
+                    video_id VARCHAR(11) NOT NULL,
                     title VARCHAR(255) NOT NULL,
+                    artist VARCHAR(255) NOT NULL,
                     thumbnail VARCHAR(255) NOT NULL,
                     duration INT NOT NULL,
-                    added_by VARCHAR(50) NOT NULL,
-                    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    position INT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (playlist_id) REFERENCES tokyo_box_playlists(id) ON DELETE CASCADE
                 )
             ]]
@@ -159,6 +160,30 @@ function Database.CreateTables()
                     duration INT NOT NULL,
                     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE KEY unique_favorite (player_id, video_id)
+                )
+            ]]
+        },
+        {
+            name = "tokyo_box_settings",
+            query = [[
+                CREATE TABLE IF NOT EXISTS tokyo_box_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    key VARCHAR(255) NOT NULL UNIQUE,
+                    value JSON NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                )
+            ]]
+        },
+        {
+            name = "tokyo_box_history",
+            query = [[
+                CREATE TABLE IF NOT EXISTS tokyo_box_history (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    track_id VARCHAR(255) NOT NULL,
+                    track_title VARCHAR(255) NOT NULL,
+                    played_by VARCHAR(255) NOT NULL,
+                    played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ]]
         }
@@ -229,8 +254,8 @@ function Database.GetPlaylistsByPlayer(playerId)
     
     local success, result = executeQuery([[
         SELECT * FROM ]] .. Config.Database.Tables.Playlists .. [[
-        WHERE created_by = ?
-        ORDER BY created_at DESC
+        WHERE owner = ? OR is_public = true
+        ORDER BY updated_at DESC
     ]], {playerId})
     
     if not success then
@@ -243,7 +268,7 @@ end
 function Database.GetAllPlaylists()
     local success, result = executeQuery([[
         SELECT * FROM ]] .. Config.Database.Tables.Playlists .. [[
-        ORDER BY created_at DESC
+        ORDER BY updated_at DESC
     ]])
     
     if not success then
@@ -251,6 +276,52 @@ function Database.GetAllPlaylists()
     end
     
     return result or {}
+end
+
+-- Funções de configuração
+function Database.GetSetting(key, cb)
+    MySQL.query('SELECT value FROM tokyo_box_settings WHERE `key` = ?', {key}, function(results)
+        if cb then
+            if results[1] then
+                cb(json.decode(results[1].value))
+            else
+                cb(nil)
+            end
+        end
+    end)
+end
+
+function Database.SetSetting(key, value, cb)
+    MySQL.insert('INSERT INTO tokyo_box_settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', {
+        key,
+        json.encode(value),
+        json.encode(value)
+    }, function(id)
+        if cb then
+            cb(id)
+        end
+    end)
+end
+
+-- Funções de histórico
+function Database.AddToHistory(trackId, trackTitle, playedBy, cb)
+    MySQL.insert('INSERT INTO tokyo_box_history (track_id, track_title, played_by) VALUES (?, ?, ?)', {
+        trackId,
+        trackTitle,
+        playedBy
+    }, function(id)
+        if cb then
+            cb(id)
+        end
+    end)
+end
+
+function Database.GetHistory(limit, cb)
+    MySQL.query('SELECT * FROM tokyo_box_history ORDER BY played_at DESC LIMIT ?', {limit}, function(results)
+        if cb then
+            cb(results)
+        end
+    end)
 end
 
 -- Exportar funções
@@ -264,6 +335,10 @@ exports("RemoveTrackFromPlaylist", Database.RemoveTrackFromPlaylist)
 exports("AddFavorite", Database.AddFavorite)
 exports("RemoveFavorite", Database.RemoveFavorite)
 exports("GetFavoritesByPlayer", Database.GetFavoritesByPlayer)
+exports("GetSetting", Database.GetSetting)
+exports("SetSetting", Database.SetSetting)
+exports("AddToHistory", Database.AddToHistory)
+exports("GetHistory", Database.GetHistory)
 
 -- Retornar o objeto Database
 return Database

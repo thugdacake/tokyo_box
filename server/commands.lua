@@ -1,70 +1,213 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 -- Comandos
-QBCore.Commands.Add('tokyobox_admin', 'Comandos administrativos do Tokyo Box', {
-    { name = 'action', help = 'Ação a ser executada' },
-    { name = 'target', help = 'ID do jogador (opcional)' }
-}, true, function(source, args)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    
-    if not Player.PlayerData.permission == 'admin' then
-        TriggerClientEvent('QBCore:Notify', src, 'Você não tem permissão para usar este comando', 'error')
+QBCore.Commands.Add('tokyobox_reload', 'Recarregar Tokyo Box', {}, false, function(source)
+    -- Verificar permissão
+    if not Config.Permissions.admin then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para recarregar"
+        })
         return
     end
     
-    local action = args[1]
-    local target = tonumber(args[2])
+    -- Recarregar recurso
+    StopResource(GetCurrentResourceName())
+    Wait(1000)
+    StartResource(GetCurrentResourceName())
     
-    if action == 'reload' then
-        -- Recarregar configuração
-        TriggerClientEvent('tokyo_box:reloadConfig', -1)
-        TriggerClientEvent('QBCore:Notify', src, 'Configuração recarregada', 'success')
-        
-    elseif action == 'clear' then
-        -- Limpar cache
-        exports['tokyo_box']:ClearCache()
-        TriggerClientEvent('QBCore:Notify', src, 'Cache limpo', 'success')
-        
-    elseif action == 'stop' then
-        -- Parar reprodução
-        if target then
-            TriggerClientEvent('tokyo_box:stop', target)
-            TriggerClientEvent('QBCore:Notify', src, 'Reprodução parada para o jogador ' .. target, 'success')
-        else
-            TriggerClientEvent('tokyo_box:stop', -1)
-            TriggerClientEvent('QBCore:Notify', src, 'Reprodução parada para todos', 'success')
-        end
-        
-    elseif action == 'volume' then
-        -- Ajustar volume
-        if not target then
-            TriggerClientEvent('QBCore:Notify', src, 'ID do jogador não especificado', 'error')
+    TriggerClientEvent("tokyo_box:notification", source, {
+        type = "success",
+        message = "Recurso recarregado"
+    })
+end)
+
+QBCore.Commands.Add('tokyobox_clear', 'Limpar cache do Tokyo Box', {}, false, function(source)
+    -- Verificar permissão
+    if not Config.Permissions.admin then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para limpar cache"
+        })
+        return
+    end
+    
+    -- Limpar cache
+    requestCache = {}
+    requestCount = {}
+    lastReset = os.time()
+    
+    TriggerClientEvent("tokyo_box:notification", source, {
+        type = "success",
+        message = "Cache limpo"
+    })
+end)
+
+QBCore.Commands.Add('tokyobox_play', 'Tocar música no Tokyo Box', {
+    {name = "id", help = "ID do vídeo"}
+}, false, function(source, args)
+    -- Verificar permissão
+    if not Config.Permissions.play then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para tocar música"
+        })
+        return
+    end
+    
+    -- Verificar argumentos
+    if not args[1] then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "ID do vídeo não informado"
+        })
+        return
+    end
+    
+    -- Tocar música
+    TriggerClientEvent("tokyo_box:playTrack", -1, {
+        id = args[1]
+    })
+end)
+
+QBCore.Commands.Add('tokyobox_stop', 'Parar música no Tokyo Box', {}, false, function(source)
+    -- Verificar permissão
+    if not Config.Permissions.stop then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para parar música"
+        })
+        return
+    end
+    
+    -- Parar música
+    TriggerClientEvent("tokyo_box:stopTrack", -1)
+end)
+
+QBCore.Commands.Add('tokyobox_volume', 'Ajustar volume do Tokyo Box', {
+    {name = "volume", help = "Volume (0-100)"}
+}, false, function(source, args)
+    -- Verificar permissão
+    if not Config.Permissions.volume then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para ajustar volume"
+        })
+        return
+    end
+    
+    -- Verificar argumentos
+    if not args[1] then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Volume não informado"
+        })
+        return
+    end
+    
+    -- Converter volume
+    local volume = tonumber(args[1])
+    if not volume or volume < 0 or volume > 100 then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Volume inválido"
+        })
+        return
+    end
+    
+    -- Ajustar volume
+    TriggerClientEvent("tokyo_box:volumeChanged", -1, volume / 100)
+end)
+
+QBCore.Commands.Add('tokyobox_playlist', 'Gerenciar playlists do Tokyo Box', {
+    {name = "action", help = "Ação (create, delete, list)"},
+    {name = "name", help = "Nome da playlist"}
+}, false, function(source, args)
+    -- Verificar permissão
+    if not Config.Permissions.playlist then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para gerenciar playlists"
+        })
+        return
+    end
+    
+    -- Verificar argumentos
+    if not args[1] then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Ação não informada"
+        })
+        return
+    end
+    
+    -- Processar ação
+    if args[1] == "list" then
+        -- Listar playlists
+        MySQL.query('SELECT * FROM tokyo_box_playlists', {}, function(results)
+            if results then
+                local message = "Playlists:\n"
+                for _, playlist in ipairs(results) do
+                    message = message .. "- " .. playlist.name .. "\n"
+                end
+                
+                TriggerClientEvent("tokyo_box:notification", source, {
+                    type = "info",
+                    message = message
+                })
+            end
+        end)
+    elseif args[1] == "create" then
+        -- Verificar nome
+        if not args[2] then
+            TriggerClientEvent("tokyo_box:notification", source, {
+                type = "error",
+                message = "Nome da playlist não informado"
+            })
             return
         end
         
-        local volume = tonumber(args[3])
-        if not volume or volume < 0 or volume > 100 then
-            TriggerClientEvent('QBCore:Notify', src, 'Volume inválido', 'error')
+        -- Criar playlist
+        MySQL.insert('INSERT INTO tokyo_box_playlists (name, tracks) VALUES (?, ?)', {
+            args[2],
+            json.encode({})
+        }, function(id)
+            if id then
+                TriggerClientEvent("tokyo_box:notification", source, {
+                    type = "success",
+                    message = "Playlist criada"
+                })
+            end
+        end)
+    elseif args[1] == "delete" then
+        -- Verificar nome
+        if not args[2] then
+            TriggerClientEvent("tokyo_box:notification", source, {
+                type = "error",
+                message = "Nome da playlist não informado"
+            })
             return
         end
         
-        TriggerClientEvent('tokyo_box:setVolume', target, volume)
-        TriggerClientEvent('QBCore:Notify', src, 'Volume ajustado para ' .. volume, 'success')
-        
-    elseif action == 'mute' then
-        -- Mutar/desmutar
-        if not target then
-            TriggerClientEvent('QBCore:Notify', src, 'ID do jogador não especificado', 'error')
-            return
-        end
-        
-        local mute = args[3] == 'true'
-        TriggerClientEvent('tokyo_box:mute', target, mute)
-        TriggerClientEvent('QBCore:Notify', src, mute and 'Jogador mutado' or 'Jogador desmutado', 'success')
-        
+        -- Deletar playlist
+        MySQL.query('DELETE FROM tokyo_box_playlists WHERE name = ?', {args[2]}, function(affectedRows)
+            if affectedRows > 0 then
+                TriggerClientEvent("tokyo_box:notification", source, {
+                    type = "success",
+                    message = "Playlist deletada"
+                })
+            else
+                TriggerClientEvent("tokyo_box:notification", source, {
+                    type = "error",
+                    message = "Playlist não encontrada"
+                })
+            end
+        end)
     else
-        TriggerClientEvent('QBCore:Notify', src, 'Ação inválida', 'error')
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Ação inválida"
+        })
     end
 end)
 

@@ -4,6 +4,18 @@
 ]]
 
 local QBCore = exports['qb-core']:GetCoreObject()
+local activePlayers = {}
+local currentTrack = nil
+local playlist = {}
+local volume = Config.Player.defaultVolume
+local isPlaying = false
+local repeatMode = 'none'
+local shuffle = false
+
+-- Cache de requisições
+local requestCache = {}
+local requestCount = {}
+local lastReset = os.time()
 
 -- Função de log
 local function Log(level, message)
@@ -75,6 +87,302 @@ local function HasPermission(source, permission)
     
     return false
 end
+
+-- Funções auxiliares
+local function hasPermission(source)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return false end
+    
+    local group = Player.PlayerData.permission
+    return Config.Permissions[group] or false
+end
+
+local function notify(source, message, type)
+    TriggerClientEvent('QBCore:Notify', source, message, type)
+end
+
+local function updateAllClients()
+    local state = {
+        currentTrack = currentTrack,
+        playlist = playlist,
+        volume = volume,
+        isPlaying = isPlaying,
+        repeatMode = repeatMode,
+        shuffle = shuffle
+    }
+    
+    TriggerClientEvent('tokyo_box:client:updateState', -1, state)
+end
+
+-- Função para verificar limite de requisições
+local function checkRateLimit(source)
+    local currentTime = os.time()
+    
+    -- Resetar contador a cada minuto
+    if currentTime - lastReset >= Config.Security.rateLimit.window then
+        requestCount = {}
+        lastReset = currentTime
+    end
+    
+    -- Incrementar contador
+    requestCount[source] = (requestCount[source] or 0) + 1
+    
+    -- Verificar limite
+    if requestCount[source] > Config.Security.rateLimit.max then
+        return false
+    end
+    
+    return true
+end
+
+-- Função para verificar domínio permitido
+local function isAllowedDomain(url)
+    for _, domain in ipairs(Config.Security.allowedDomains) do
+        if string.find(url, domain) then
+            return true
+        end
+    end
+    return false
+end
+
+-- Função para buscar vídeos
+local function searchVideos(query)
+    if not query or query == "" then
+        return { error = "Query inválida" }
+    end
+    
+    -- Verificar cache
+    local cacheKey = "search:" .. query
+    if Config.Cache.enabled and requestCache[cacheKey] then
+        local cache = requestCache[cacheKey]
+        if os.time() - cache.time < Config.Cache.ttl then
+            return cache.data
+        end
+    end
+    
+    -- Fazer requisição à API
+    local url = string.format("%s/search?part=snippet&q=%s&type=video&maxResults=%d&key=%s",
+        Config.API.baseUrl,
+        query,
+        Config.API.maxResults,
+        Config.API.key
+    )
+    
+    PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
+        if errorCode ~= 200 then
+            TriggerClientEvent("tokyo_box:searchResults", source, { error = "Erro na API" })
+            return
+        end
+        
+        local result = json.decode(resultData)
+        if not result or not result.items then
+            TriggerClientEvent("tokyo_box:searchResults", source, { error = "Erro ao processar resultados" })
+            return
+        end
+        
+        -- Processar resultados
+        local videos = {}
+        for _, item in ipairs(result.items) do
+            if item.id and item.id.videoId then
+                table.insert(videos, {
+                    id = item.id.videoId,
+                    title = item.snippet.title,
+                    thumbnail = item.snippet.thumbnails.default.url,
+                    duration = "0:00" -- Duração precisa de outra requisição
+                })
+            end
+        end
+        
+        -- Salvar no cache
+        if Config.Cache.enabled then
+            requestCache[cacheKey] = {
+                time = os.time(),
+                data = videos
+            }
+            
+            -- Limpar cache antigo
+            local count = 0
+            for k, v in pairs(requestCache) do
+                count = count + 1
+                if count > Config.Cache.maxSize then
+                    requestCache[k] = nil
+                end
+            end
+        end
+        
+        -- Enviar resultados
+        TriggerClientEvent("tokyo_box:searchResults", source, videos)
+    end, "GET", "", { ["Content-Type"] = "application/json" })
+end
+
+-- Eventos
+RegisterNetEvent("tokyo_box:search")
+AddEventHandler("tokyo_box:search", function(query)
+    local source = source
+    
+    -- Verificar limite de requisições
+    if not checkRateLimit(source) then
+        TriggerClientEvent("tokyo_box:searchResults", source, { error = "Limite de requisições excedido" })
+        return
+    end
+    
+    -- Buscar vídeos
+    searchVideos(query)
+end)
+
+RegisterNetEvent("tokyo_box:setVolume")
+AddEventHandler("tokyo_box:setVolume", function(volume)
+    local source = source
+    
+    -- Verificar volume
+    if not volume or type(volume) ~= "number" or volume < Config.Player.minVolume or volume > Config.Player.maxVolume then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Volume inválido"
+        })
+        return
+    end
+    
+    -- Atualizar volume
+    TriggerClientEvent("tokyo_box:volumeChanged", -1, volume)
+end)
+
+RegisterNetEvent("tokyo_box:play")
+AddEventHandler("tokyo_box:play", function(track)
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.play then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para tocar música"
+        })
+        return
+    end
+    
+    -- Verificar track
+    if not track or not track.id then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Track inválida"
+        })
+        return
+    end
+    
+    -- Tocar música
+    TriggerClientEvent("tokyo_box:playTrack", -1, track)
+end)
+
+RegisterNetEvent("tokyo_box:pause")
+AddEventHandler("tokyo_box:pause", function()
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.pause then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para pausar música"
+        })
+        return
+    end
+    
+    -- Pausar música
+    TriggerClientEvent("tokyo_box:pauseTrack", -1)
+end)
+
+RegisterNetEvent("tokyo_box:stop")
+AddEventHandler("tokyo_box:stop", function()
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.stop then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para parar música"
+        })
+        return
+    end
+    
+    -- Parar música
+    TriggerClientEvent("tokyo_box:stopTrack", -1)
+end)
+
+RegisterNetEvent("tokyo_box:next")
+AddEventHandler("tokyo_box:next", function()
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.play then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para tocar próxima música"
+        })
+        return
+    end
+    
+    -- Tocar próxima música
+    TriggerClientEvent("tokyo_box:nextTrack", -1)
+end)
+
+RegisterNetEvent("tokyo_box:previous")
+AddEventHandler("tokyo_box:previous", function()
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.play then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para tocar música anterior"
+        })
+        return
+    end
+    
+    -- Tocar música anterior
+    TriggerClientEvent("tokyo_box:previousTrack", -1)
+end)
+
+RegisterNetEvent("tokyo_box:shuffle")
+AddEventHandler("tokyo_box:shuffle", function()
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.play then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para embaralhar playlist"
+        })
+        return
+    end
+    
+    -- Embaralhar playlist
+    TriggerClientEvent("tokyo_box:shufflePlaylist", -1)
+end)
+
+RegisterNetEvent("tokyo_box:repeat")
+AddEventHandler("tokyo_box:repeat", function(mode)
+    local source = source
+    
+    -- Verificar permissão
+    if not Config.Permissions.play then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Sem permissão para alterar modo de repetição"
+        })
+        return
+    end
+    
+    -- Verificar modo
+    if not mode or (mode ~= "none" and mode ~= "one" and mode ~= "all") then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Modo de repetição inválido"
+        })
+        return
+    end
+    
+    -- Alterar modo de repetição
+    TriggerClientEvent("tokyo_box:repeatMode", -1, mode)
+end)
 
 -- Eventos de Playlist
 RegisterNetEvent("tokyo_box:requestPlaylists")
@@ -725,6 +1033,157 @@ AddEventHandler('tokyo_box:mute', function(mute)
         
         if distance <= Config.Player.maxDistance then
             TriggerClientEvent('tokyo_box:mute', playerId, mute)
+        end
+    end
+end)
+
+-- Eventos do cliente
+RegisterNetEvent('tokyo_box:server:togglePlayback', function(play)
+    local source = source
+    if not hasPermission(source) then
+        notify(source, Lang:t('error.invalid_permission'), 'error')
+        return
+    end
+    
+    isPlaying = play
+    updateAllClients()
+end)
+
+RegisterNetEvent('tokyo_box:server:setVolume', function(newVolume)
+    local source = source
+    if not hasPermission(source) then
+        notify(source, Lang:t('error.invalid_permission'), 'error')
+        return
+    end
+    
+    if type(newVolume) ~= 'number' or newVolume < Config.Player.minVolume or newVolume > Config.Player.maxVolume then
+        notify(source, Lang:t('error.invalid_volume_range', { min = Config.Player.minVolume, max = Config.Player.maxVolume }), 'error')
+        return
+    end
+    
+    volume = newVolume
+    updateAllClients()
+end)
+
+RegisterNetEvent('tokyo_box:server:playTrack', function(track)
+    local source = source
+    if not hasPermission(source) then
+        notify(source, Lang:t('error.invalid_permission'), 'error')
+        return
+    end
+    
+    if not track or not track.id then
+        notify(source, Lang:t('error.invalid_input'), 'error')
+        return
+    end
+    
+    currentTrack = track
+    isPlaying = true
+    updateAllClients()
+end)
+
+RegisterNetEvent('tokyo_box:server:toggleShuffle', function(enable)
+    local source = source
+    if not hasPermission(source) then
+        notify(source, Lang:t('error.invalid_permission'), 'error')
+        return
+    end
+    
+    shuffle = enable
+    updateAllClients()
+end)
+
+RegisterNetEvent('tokyo_box:server:toggleRepeat', function(mode)
+    local source = source
+    if not hasPermission(source) then
+        notify(source, Lang:t('error.invalid_permission'), 'error')
+        return
+    end
+    
+    if mode ~= 'none' and mode ~= 'one' and mode ~= 'all' then
+        notify(source, Lang:t('error.invalid_input'), 'error')
+        return
+    end
+    
+    repeatMode = mode
+    updateAllClients()
+end)
+
+RegisterNetEvent('tokyo_box:server:getProgress', function()
+    local source = source
+    if not currentTrack then return end
+    
+    -- Implementar lógica de progresso da música
+    local progress = 0 -- Substituir com lógica real
+    TriggerClientEvent('tokyo_box:client:updateProgress', source, progress)
+end)
+
+-- Comandos
+QBCore.Commands.Add('tokyobox', Lang:t('commands.tokyobox.description'), {
+    { name = 'action', help = Lang:t('commands.tokyobox.help') }
+}, function(source, args)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then return end
+    
+    if not hasPermission(source) then
+        notify(source, Lang:t('error.invalid_permission'), 'error')
+        return
+    end
+    
+    local action = args[1]
+    if not action then
+        TriggerClientEvent('tokyo_box:client:showUI', source)
+        return
+    end
+    
+    if action == 'play' then
+        local url = args[2]
+        if not url then
+            notify(source, Lang:t('error.invalid_input'), 'error')
+            return
+        end
+        
+        -- Implementar lógica de reprodução
+        notify(source, Lang:t('success.track_added'), 'success')
+    elseif action == 'stop' then
+        currentTrack = nil
+        isPlaying = false
+        updateAllClients()
+        notify(source, Lang:t('success.playback_stopped'), 'success')
+    elseif action == 'volume' then
+        local vol = tonumber(args[2])
+        if not vol then
+            notify(source, Lang:t('error.invalid_input'), 'error')
+            return
+        end
+        
+        TriggerEvent('tokyo_box:server:setVolume', vol)
+    end
+end)
+
+-- Exportações
+exports('GetCurrentTrack', function()
+    return currentTrack
+end)
+
+exports('IsPlaying', function()
+    return isPlaying
+end)
+
+exports('GetVolume', function()
+    return volume
+end)
+
+exports('GetPlaylist', function()
+    return playlist
+end)
+
+-- Inicialização
+CreateThread(function()
+    while true do
+        Wait(1000)
+        if isPlaying and currentTrack then
+            -- Implementar lógica de progresso da música
         end
     end
 end)

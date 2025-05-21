@@ -1,158 +1,113 @@
 # Tokyo Box
 
-Sistema de música e vídeo para FiveM com interface moderna e recursos avançados.
+Um sistema avançado de música para FiveM com suporte a múltiplos frameworks e recursos modernos.
 
-## Características
+## 🚀 Recursos
 
-- Reprodução de música e vídeos do YouTube
-- Interface responsiva e moderna
-- Temas personalizáveis
-- Suporte a múltiplos idiomas
-- Sistema de playlists
-- Favoritos
-- Controle de volume
-- Sistema de permissões
-- Cache para melhor performance
-- Notificações estilizadas
-- Comandos de debug
+- 🎵 Reprodução de música via YouTube
+- 🎨 Temas personalizáveis (dark/light)
+- 🌍 Suporte a múltiplos idiomas
+- 💾 Sistema de playlists salvas
+- 🔄 Cache inteligente
+- 🔔 Sistema de notificações
+- 🛡️ Suporte a múltiplos frameworks (QBCore, ESX, OX Core)
+- 📱 Interface moderna e responsiva
 
-## Requisitos
+## 📋 Requisitos
 
 - FiveM Server
-- QBX Core
-- oxmysql
-- Chave da API do YouTube
+- Framework suportado (QBCore, ESX ou OX Core)
+- oxmysql (opcional, para persistência de dados)
 
-## Instalação
+## ⚙️ Instalação
 
-1. Baixe o recurso
-2. Coloque na pasta `resources`
-3. Adicione `ensure tokyo-box` ao seu `server.cfg`
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/tokyo-box.git
+```
+
+2. Copie a pasta `tokyo-box` para seu diretório de recursos
+
+3. Adicione ao seu `server.cfg`:
+```cfg
+ensure tokyo-box
+```
+
 4. Configure sua chave da API do YouTube em `config.lua`
-5. Reinicie o servidor
 
-## Uso Rápido
+## 🎮 Uso
 
-### Comandos
-- `/tokyobox` - Abre o menu principal
-- `/tokyobox_spawnBox` - Spawna uma caixa de som
-- `/tokyobox_btToggle` - Ativa/desativa modo Bluetooth
-- `/tokyobox_lang [idioma]` - Muda o idioma (pt-BR, en-US)
-- `/tokyobox_theme [tema]` - Muda o tema (Default, Dark, Light, Neon)
+- Comando: `/tokyobox`
+- Tecla padrão: `F7`
 
-### Controles
-- `E` - Interagir com a caixa de som
-- `G` - Abrir/fechar interface
-- `ESC` - Fechar interface
-- `Mouse` - Arrastar interface
-- `Scroll` - Ajustar volume
+## 🔧 Configuração
 
-### Permissões
-- `tokyo_box.play` - Reproduzir música
-- `tokyo_box.create_playlist` - Criar playlists
-- `tokyo_box.delete_playlist` - Deletar playlists
-- `tokyo_box.admin` - Acesso administrativo
+Todas as configurações podem ser ajustadas no arquivo `config.lua`:
 
-## Configuração
+- Framework
+- API do YouTube
+- UI
+- Player
+- Permissões
+- Comandos
+- Notificações
+- Banco de dados
+- Cache
+- Debug
+- Teclas
+- Temas
+- Idiomas
 
-### API
-```lua
-Config.YouTubeAPIKey = 'SUA_CHAVE_API_AQUI'
-Config.YouTubeCacheDuration = 3600 -- 1 hora
-Config.YouTubeRequestInterval = 1 -- 1 segundo entre requisições
-```
+## 📦 Estrutura do Projeto
 
-### UI
-```lua
-Config.UI = {
-    DefaultScale = 1.0,
-    MinScale = 0.5,
-    MaxScale = 2.0,
-    ScaleStep = 0.1,
-    DefaultTheme = 'Default'
-}
-```
-
-### Player
-```lua
-Config.Audio = {
-    DefaultVolume = 0.5,
-    MinVolume = 0.0,
-    MaxVolume = 1.0,
-    VolumeStep = 0.1,
-    FadeDuration = 0.5
-}
-```
-
-## Idiomas Suportados
-
-- Português (Brasil) - `pt-BR`
-- Inglês (EUA) - `en-US`
-
-Para adicionar um novo idioma:
-1. Crie um arquivo JSON em `locales/`
-2. Use o formato do arquivo `pt-BR.json` como base
-3. Adicione o idioma ao `Config.DefaultLocale`
-
-## Temas Disponíveis
-
-- Default - Tema padrão com cores vermelhas
-- Dark - Tema escuro com cores azuis
-- Light - Tema claro com cores azuis
-- Neon - Tema escuro com cores neon
-
-Para adicionar um novo tema:
-1. Adicione o tema em `Config.Themes`
-2. Use o formato dos temas existentes como base
-3. Defina as cores e valores necessários
-
-## Desenvolvimento
-
-### Estrutura de Arquivos
 ```
 tokyo-box/
 ├── client/
+│   ├── main.lua
+│   ├── commands.lua
+│   ├── events.lua
 │   ├── locale.lua
+│   ├── notification.lua
+│   ├── nui.lua
 │   ├── theme.lua
-│   └── main.lua
+│   └── utils.lua
 ├── server/
+│   ├── main.lua
+│   ├── commands.lua
 │   ├── database.lua
+│   ├── events.lua
+│   ├── init.lua
 │   ├── youtube_api.lua
-│   └── main.lua
+│   └── check_dependencies.lua
 ├── html/
 │   ├── index.html
-│   ├── css/
-│   │   └── style.css
-│   └── js/
-│       └── nui.js
+│   ├── style.css
+│   └── script.js
 ├── locales/
-│   ├── pt-BR.json
-│   └── en-US.json
-├── test/
-│   ├── test_helper.lua
-│   ├── locale_test.lua
-│   ├── theme_test.lua
-│   └── database_test.lua
+│   ├── pt-BR.lua
+│   └── en-US.lua
 ├── config.lua
-├── fxmanifest.lua
-├── README.md
-└── CHANGELOG.md
+└── fxmanifest.lua
 ```
 
-### Modo Debug
-Para ativar o modo debug, defina `Config.Debug = true` em `config.lua`.
+## 🔄 Atualizações Recentes
 
-### Testes
-Para executar os testes:
-1. Ative o modo debug
-2. Use o comando `/tokyobox_test`
+### v1.0.0
+- Implementação inicial
+- Sistema de cache
+- Sistema de notificações
+- Temas personalizáveis
+- Playlists salvas
+- Suporte a múltiplos frameworks
 
-## Suporte
+## 🤝 Contribuição
 
-- [GitHub Issues](https://github.com/seu-usuario/tokyo-box/issues)
-- [Discord](https://discord.gg/seu-servidor)
+Contribuições são bem-vindas! Por favor, leia o [CONTRIBUTING.md](CONTRIBUTING.md) para detalhes sobre nosso código de conduta e o processo para enviar pull requests.
 
-## Licença
+## 📝 Licença
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
-# tokyo_box
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE.md](LICENSE.md) para detalhes.
+
+## 📞 Suporte
+
+Para suporte, abra uma issue no GitHub ou entre em contato através do Discord.

@@ -1,156 +1,184 @@
 local QBCore = exports['qb-core']:GetCoreObject()
+local isUIOpen = false
 local currentTrack = nil
-local isPlaying = false
+local playlist = {}
 local volume = Config.Player.defaultVolume
-local isMuted = false
-local isShuffled = false
-local repeatMode = 'none' -- none, one, all
+local isPlaying = false
+local repeatMode = 'none'
+local shuffle = false
 
--- Função para reproduzir áudio
-local function playAudio(track)
-    if not track or not track.id then return end
-    
-    currentTrack = track
-    isPlaying = true
-    
-    -- Criar objeto de áudio
-    local audio = {
-        id = track.id,
-        title = track.title,
-        artist = track.channelTitle,
-        thumbnail = track.thumbnail,
-        duration = 0, -- Será atualizado quando o áudio começar
-        position = 0
-    }
-    
-    -- Enviar para a UI
-    SendNUIMessage({
-        type = 'updateTrack',
-        track = audio
-    })
-    
-    -- Reproduzir áudio
-    TriggerServerEvent('tokyo_box:playAudio', track.id, volume)
-end
-
--- Função para pausar áudio
-local function pauseAudio()
-    if not isPlaying then return end
-    
-    isPlaying = false
-    TriggerServerEvent('tokyo_box:pauseAudio')
-end
-
--- Função para retomar áudio
-local function resumeAudio()
-    if isPlaying then return end
-    
-    isPlaying = true
-    TriggerServerEvent('tokyo_box:resumeAudio')
-end
-
--- Função para parar áudio
-local function stopAudio()
-    if not currentTrack then return end
-    
-    currentTrack = nil
-    isPlaying = false
-    TriggerServerEvent('tokyo_box:stopAudio')
-end
-
--- Função para ajustar volume
-local function setVolume(newVolume)
-    if type(newVolume) ~= 'number' or newVolume < 0 or newVolume > 100 then return end
-    
-    volume = newVolume
-    if not isMuted then
-        TriggerServerEvent('tokyo_box:setVolume', volume)
+-- Eventos do NUI
+RegisterNUICallback('togglePlayback', function(data, cb)
+    if not currentTrack then
+        QBCore.Functions.Notify(Lang:t('error.no_track'), 'error')
+        cb({ success = false })
+        return
     end
-end
 
--- Função para mutar/desmutar
-local function toggleMute()
-    isMuted = not isMuted
-    if isMuted then
-        TriggerServerEvent('tokyo_box:setVolume', 0)
-    else
-        TriggerServerEvent('tokyo_box:setVolume', volume)
+    isPlaying = not isPlaying
+    TriggerServerEvent('tokyo_box:server:togglePlayback', isPlaying)
+    cb({ success = true, isPlaying = isPlaying })
+end)
+
+RegisterNUICallback('setVolume', function(data, cb)
+    if not data.volume or data.volume < Config.Player.minVolume or data.volume > Config.Player.maxVolume then
+        QBCore.Functions.Notify(Lang:t('error.invalid_volume_range', { min = Config.Player.minVolume, max = Config.Player.maxVolume }), 'error')
+        cb({ success = false })
+        return
     end
-end
 
--- Função para embaralhar
-local function toggleShuffle()
-    isShuffled = not isShuffled
-    TriggerServerEvent('tokyo_box:shuffle', isShuffled)
-end
+    volume = data.volume
+    TriggerServerEvent('tokyo_box:server:setVolume', volume)
+    cb({ success = true, volume = volume })
+end)
 
--- Função para repetir
-local function setRepeatMode(mode)
-    if mode ~= 'none' and mode ~= 'one' and mode ~= 'all' then return end
+RegisterNUICallback('playTrack', function(data, cb)
+    if not data.index or not playlist[data.index] then
+        QBCore.Functions.Notify(Lang:t('error.invalid_input'), 'error')
+        cb({ success = false })
+        return
+    end
+
+    currentTrack = playlist[data.index]
+    isPlaying = true
+    TriggerServerEvent('tokyo_box:server:playTrack', currentTrack)
+    cb({ success = true, track = currentTrack, isPlaying = true })
+end)
+
+RegisterNUICallback('toggleShuffle', function(data, cb)
+    shuffle = not shuffle
+    TriggerServerEvent('tokyo_box:server:toggleShuffle', shuffle)
+    cb({ success = true, shuffle = shuffle })
+end)
+
+RegisterNUICallback('toggleRepeat', function(data, cb)
+    local modes = { 'none', 'one', 'all' }
+    local currentIndex = 1
+    for i, mode in ipairs(modes) do
+        if mode == repeatMode then
+            currentIndex = i
+            break
+        end
+    end
     
-    repeatMode = mode
-    TriggerServerEvent('tokyo_box:repeat', mode)
-end
+    currentIndex = currentIndex % #modes + 1
+    repeatMode = modes[currentIndex]
+    
+    TriggerServerEvent('tokyo_box:server:toggleRepeat', repeatMode)
+    cb({ success = true, repeatMode = repeatMode })
+end)
 
 -- Eventos do servidor
-RegisterNetEvent('tokyo_box:updateTrack')
-AddEventHandler('tokyo_box:updateTrack', function(track)
-    playAudio(track)
+RegisterNetEvent('tokyo_box:client:updateState', function(newState)
+    if not newState then return end
+    
+    if newState.currentTrack then
+        currentTrack = newState.currentTrack
+    end
+    
+    if newState.playlist then
+        playlist = newState.playlist
+    end
+    
+    if newState.volume then
+        volume = newState.volume
+    end
+    
+    if newState.isPlaying ~= nil then
+        isPlaying = newState.isPlaying
+    end
+    
+    if newState.repeatMode then
+        repeatMode = newState.repeatMode
+    end
+    
+    if newState.shuffle ~= nil then
+        shuffle = newState.shuffle
+    end
+    
+    SendNUIMessage({
+        type = 'updateState',
+        state = {
+            currentTrack = currentTrack,
+            playlist = playlist,
+            volume = volume,
+            isPlaying = isPlaying,
+            repeatMode = repeatMode,
+            shuffle = shuffle
+        }
+    })
 end)
 
-RegisterNetEvent('tokyo_box:pause')
-AddEventHandler('tokyo_box:pause', function()
-    pauseAudio()
+RegisterNetEvent('tokyo_box:client:showUI', function()
+    if isUIOpen then return end
+    
+    isUIOpen = true
+    SetNuiFocus(true, true)
+    SendNUIMessage({
+        type = 'show',
+        state = {
+            currentTrack = currentTrack,
+            playlist = playlist,
+            volume = volume,
+            isPlaying = isPlaying,
+            repeatMode = repeatMode,
+            shuffle = shuffle
+        }
+    })
 end)
 
-RegisterNetEvent('tokyo_box:resume')
-AddEventHandler('tokyo_box:resume', function()
-    resumeAudio()
+RegisterNetEvent('tokyo_box:client:hideUI', function()
+    if not isUIOpen then return end
+    
+    isUIOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({
+        type = 'hide'
+    })
 end)
 
-RegisterNetEvent('tokyo_box:stop')
-AddEventHandler('tokyo_box:stop', function()
-    stopAudio()
-end)
-
-RegisterNetEvent('tokyo_box:setVolume')
-AddEventHandler('tokyo_box:setVolume', function(newVolume)
-    setVolume(newVolume)
-end)
-
-RegisterNetEvent('tokyo_box:shuffle')
-AddEventHandler('tokyo_box:shuffle', function(shuffle)
-    isShuffled = shuffle
-end)
-
-RegisterNetEvent('tokyo_box:repeat')
-AddEventHandler('tokyo_box:repeat', function(mode)
-    repeatMode = mode
-end)
-
-RegisterNetEvent('tokyo_box:mute')
-AddEventHandler('tokyo_box:mute', function(mute)
-    isMuted = mute
-    if mute then
-        TriggerServerEvent('tokyo_box:setVolume', 0)
+-- Comandos
+RegisterCommand('tokyobox', function()
+    if isUIOpen then
+        TriggerEvent('tokyo_box:client:hideUI')
     else
-        TriggerServerEvent('tokyo_box:setVolume', volume)
+        TriggerEvent('tokyo_box:client:showUI')
     end
 end)
 
--- Exportações
-exports('GetCurrentTrack', function() return currentTrack end)
-exports('IsPlaying', function() return isPlaying end)
-exports('GetVolume', function() return volume end)
-exports('IsMuted', function() return isMuted end)
-exports('IsShuffled', function() return isShuffled end)
-exports('GetRepeatMode', function() return repeatMode end)
+-- Teclas
+RegisterKeyMapping('tokyobox', 'Abrir Tokyo Box', 'keyboard', Config.Keys.open)
 
-exports('PlayTrack', playAudio)
-exports('PauseTrack', pauseAudio)
-exports('ResumeTrack', resumeAudio)
-exports('StopTrack', stopAudio)
-exports('SetVolume', setVolume)
-exports('ToggleMute', toggleMute)
-exports('ToggleShuffle', toggleShuffle)
-exports('SetRepeatMode', setRepeatMode) 
+-- Callbacks do NUI
+RegisterNUICallback('close', function(data, cb)
+    TriggerEvent('tokyo_box:client:hideUI')
+    cb({ success = true })
+end)
+
+-- Inicialização
+CreateThread(function()
+    while true do
+        Wait(1000)
+        if isUIOpen and currentTrack then
+            -- Atualizar progresso da música
+            TriggerServerEvent('tokyo_box:server:getProgress')
+        end
+    end
+end)
+
+-- Exportar funções
+exports('GetCurrentTrack', function()
+    return currentTrack
+end)
+
+exports('IsPlaying', function()
+    return isPlaying
+end)
+
+exports('GetVolume', function()
+    return volume
+end)
+
+exports('GetPlaylist', function()
+    return playlist
+end) 

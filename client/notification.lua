@@ -7,6 +7,19 @@
 
 local Notification = {}
 
+local QBCore = exports['qb-core']:GetCoreObject()
+
+-- Configurações
+local config = {
+    position = 'top-right',
+    duration = 5000,
+    animation = {
+        in = 'fadeIn',
+        out = 'fadeOut'
+    },
+    sound = true
+}
+
 -- Tipos de notificação válidos
 local validTypes = {
     success = true,
@@ -32,6 +45,50 @@ local validAnimations = {
 
 -- Cache de eventos registrados
 local registeredEvents = {}
+
+-- Funções auxiliares
+local function playSound(type)
+    if not config.sound then return end
+    
+    local sound = {
+        success = 'success',
+        error = 'error',
+        info = 'info'
+    }
+    
+    if sound[type] then
+        SendNUIMessage({
+            type = 'playSound',
+            sound = sound[type]
+        })
+    end
+end
+
+local function showNotification(message, type)
+    if not message then return end
+    
+    type = type or 'info'
+    local colors = {
+        success = '#4CAF50',
+        error = '#F44336',
+        info = '#2196F3',
+        warning = '#FFC107'
+    }
+    
+    SendNUIMessage({
+        type = 'showNotification',
+        notification = {
+            message = message,
+            type = type,
+            color = colors[type] or colors.info,
+            position = config.position,
+            duration = config.duration,
+            animation = config.animation
+        }
+    })
+    
+    playSound(type)
+end
 
 -- Função principal para mostrar notificações
 function Notification.Show(message, type, duration, position, icon, animation)
@@ -129,6 +186,31 @@ end
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName == GetCurrentResourceName() then
         Notification.Cleanup()
+    end
+end)
+
+-- Eventos
+RegisterNetEvent('tokyo_box:client:notify', function(message, type)
+    showNotification(message, type)
+end)
+
+-- Exportações
+exports('ShowNotification', showNotification)
+exports('SetConfig', function(newConfig)
+    if type(newConfig) ~= 'table' then return end
+    
+    for k, v in pairs(newConfig) do
+        config[k] = v
+    end
+end)
+
+-- Inicialização
+CreateThread(function()
+    while true do
+        Wait(0)
+        if IsControlJustPressed(0, Config.Keys.notification) then
+            showNotification('Teste de notificação', 'info')
+        end
     end
 end)
 

@@ -3,6 +3,145 @@
     Versão 1.0.1
 ]]
 
+local QBCore = exports['qb-core']:GetCoreObject()
+
+-- Funções auxiliares
+local function formatTime(seconds)
+    if not seconds then return "00:00" end
+    
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    
+    if hours > 0 then
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    else
+        return string.format("%02d:%02d", minutes, secs)
+    end
+end
+
+local function formatFileSize(bytes)
+    if not bytes then return "0 B" end
+    
+    local units = {"B", "KB", "MB", "GB", "TB"}
+    local size = bytes
+    local unit = 1
+    
+    while size >= 1024 and unit < #units do
+        size = size / 1024
+        unit = unit + 1
+    end
+    
+    return string.format("%.1f %s", size, units[unit])
+end
+
+local function sanitizeString(str)
+    if not str then return "" end
+    
+    return string.gsub(str, "[<>\"']", "")
+end
+
+local function validateURL(url)
+    if not url then return false end
+    
+    local patterns = {
+        "^https?://[%w-_%.%?%.:/%+=&]+$",
+        "^[%w-_%.%?%.:/%+=&]+$"
+    }
+    
+    for _, pattern in ipairs(patterns) do
+        if string.match(url, pattern) then
+            return true
+        end
+    end
+    
+    return false
+end
+
+local function deepCopy(original)
+    local copy
+    if type(original) == 'table' then
+        copy = {}
+        for k, v in pairs(original) do
+            copy[k] = deepCopy(v)
+        end
+    else
+        copy = original
+    end
+    return copy
+end
+
+local function tableLength(t)
+    if type(t) ~= 'table' then return 0 end
+    
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
+local function tableContains(t, value)
+    if type(t) ~= 'table' then return false end
+    
+    for _, v in pairs(t) do
+        if v == value then
+            return true
+        end
+    end
+    return false
+end
+
+local function tableRemoveValue(t, value)
+    if type(t) ~= 'table' then return end
+    
+    for k, v in pairs(t) do
+        if v == value then
+            table.remove(t, k)
+            return
+        end
+    end
+end
+
+local function tableShuffle(t)
+    if type(t) ~= 'table' then return end
+    
+    local n = #t
+    while n > 1 do
+        local k = math.random(n)
+        t[n], t[k] = t[k], t[n]
+        n = n - 1
+    end
+    return t
+end
+
+local function debounce(func, wait)
+    local timeout
+    
+    return function(...)
+        local args = {...}
+        if timeout then
+            ClearTimeout(timeout)
+        end
+        
+        timeout = SetTimeout(wait, function()
+            func(unpack(args))
+        end)
+    end
+end
+
+local function throttle(func, limit)
+    local lastRun = 0
+    
+    return function(...)
+        local now = GetGameTimer()
+        if now - lastRun >= limit then
+            lastRun = now
+            return func(...)
+        end
+    end
+end
+
 -- Função para formatar duração
 function FormatDuration(duration)
     if not duration then return "0:00" end
@@ -140,3 +279,19 @@ exports("IsPlayerNearby", IsPlayerNearby)
 exports("GetNearbyPlayers", GetNearbyPlayers)
 exports("CalculateDistanceVolume", CalculateDistanceVolume)
 exports("HasPermission", HasPermission)
+exports('FormatTime', formatTime)
+exports('FormatFileSize', formatFileSize)
+exports('SanitizeString', sanitizeString)
+exports('ValidateURL', validateURL)
+exports('DeepCopy', deepCopy)
+exports('TableLength', tableLength)
+exports('TableContains', tableContains)
+exports('TableRemoveValue', tableRemoveValue)
+exports('TableShuffle', tableShuffle)
+exports('Debounce', debounce)
+exports('Throttle', throttle)
+
+-- Inicialização
+CreateThread(function()
+    math.randomseed(GetGameTimer())
+end)

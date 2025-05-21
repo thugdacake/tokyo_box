@@ -1,169 +1,148 @@
--- Cache de requisições
-local requestCache = {}
-local requestCount = {}
-local lastReset = os.time()
+local QBCore = exports['qb-core']:GetCoreObject()
 
--- Função para verificar limite de requisições
-local function checkRateLimit(source)
-    local currentTime = os.time()
-    
-    -- Resetar contador a cada minuto
-    if currentTime - lastReset >= Config.Security.rateLimit.window then
-        requestCount = {}
-        lastReset = currentTime
+-- Configurações
+local config = {
+    debug = false,
+    defaultVolume = 0.5,
+    minVolume = 0.0,
+    maxVolume = 1.0,
+    defaultTheme = 'dark',
+    defaultLocale = 'pt-BR',
+    permissions = {
+        play = true,
+        pause = true,
+        stop = true,
+        volume = true,
+        playlist = true,
+        search = true
+    }
+}
+
+-- Estado
+local isInitialized = false
+local players = {}
+
+-- Funções auxiliares
+local function log(message)
+    if config.debug then
+        print("^3[DEBUG] Tokyo Box - Server: " .. message .. "^7")
     end
-    
-    -- Incrementar contador
-    requestCount[source] = (requestCount[source] or 0) + 1
-    
-    -- Verificar limite
-    if requestCount[source] > Config.Security.rateLimit.max then
-        return false
-    end
-    
-    return true
 end
 
--- Função para verificar domínio permitido
-local function isAllowedDomain(url)
-    for _, domain in ipairs(Config.Security.allowedDomains) do
-        if string.find(url, domain) then
-            return true
-        end
-    end
-    return false
-end
-
--- Função para buscar vídeos
-local function searchVideos(query)
-    if not query or query == "" then
-        return { error = "Query inválida" }
-    end
+local function initialize()
+    if isInitialized then return end
     
-    -- Verificar cache
-    local cacheKey = "search:" .. query
-    if Config.Cache.enabled and requestCache[cacheKey] then
-        local cache = requestCache[cacheKey]
-        if os.time() - cache.time < Config.Cache.ttl then
-            return cache.data
-        end
-    end
+    -- Carregar configurações do banco de dados
+    MySQL.ready(function()
+        MySQL.query([[
+            CREATE TABLE IF NOT EXISTS tokyo_box_playlists (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                tracks JSON NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ]])
+        
+        MySQL.query([[
+            CREATE TABLE IF NOT EXISTS tokyo_box_settings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                key VARCHAR(255) NOT NULL UNIQUE,
+                value JSON NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ]])
+    end)
     
-    -- Fazer requisição à API
-    local url = string.format("%s/search?part=snippet&q=%s&type=video&maxResults=%d&key=%s",
-        Config.API.baseUrl,
-        query,
-        Config.API.maxResults,
-        Config.API.key
-    )
-    
-    PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
-        if errorCode ~= 200 then
-            TriggerClientEvent("tokyo-box:searchResults", source, { error = "Erro na API" })
-            return
-        end
-        
-        local result = json.decode(resultData)
-        if not result or not result.items then
-            TriggerClientEvent("tokyo-box:searchResults", source, { error = "Erro ao processar resultados" })
-            return
-        end
-        
-        -- Processar resultados
-        local videos = {}
-        for _, item in ipairs(result.items) do
-            if item.id and item.id.videoId then
-                table.insert(videos, {
-                    id = item.id.videoId,
-                    title = item.snippet.title,
-                    thumbnail = item.snippet.thumbnails.default.url,
-                    duration = "0:00" -- Duração precisa de outra requisição
-                })
-            end
-        end
-        
-        -- Salvar no cache
-        if Config.Cache.enabled then
-            requestCache[cacheKey] = {
-                time = os.time(),
-                data = videos
-            }
-            
-            -- Limpar cache antigo
-            local count = 0
-            for k, v in pairs(requestCache) do
-                count = count + 1
-                if count > Config.Cache.maxSize then
-                    requestCache[k] = nil
-                end
-            end
-        end
-        
-        -- Enviar resultados
-        TriggerClientEvent("tokyo-box:searchResults", source, videos)
-    end, "GET", "", { ["Content-Type"] = "application/json" })
+    isInitialized = true
+    log("Servidor inicializado")
 end
 
 -- Eventos
-RegisterNetEvent("tokyo-box:search")
-AddEventHandler("tokyo-box:search", function(query)
+RegisterNetEvent('tokyo_box:server:getConfig', function()
     local source = source
-    
-    -- Verificar limite de requisições
-    if not checkRateLimit(source) then
-        TriggerClientEvent("tokyo-box:searchResults", source, { error = "Limite de requisições excedido" })
-        return
-    end
-    
-    -- Buscar vídeos
-    searchVideos(query)
+    TriggerClientEvent('tokyo_box:client:updateConfig', source, config)
 end)
 
-RegisterNetEvent("tokyo-box:setVolume")
-AddEventHandler("tokyo-box:setVolume", function(volume)
+RegisterNetEvent('tokyo_box:server:getPlaylists', function()
     local source = source
     
-    -- Verificar volume
-    if not volume or type(volume) ~= "number" or volume < Config.Player.minVolume or volume > Config.Player.maxVolume then
-        TriggerClientEvent("tokyo-box:notification", source, {
-            type = "error",
-            message = "Volume inválido"
-        })
-        return
-    end
+    MySQL.query('SELECT * FROM tokyo_box_playlists', {}, function(results)
+        if results then
+            TriggerClientEvent('tokyo_box:client:updateState', source, {
+                playlists = results
+            })
+        end
+    end)
+end)
+
+RegisterNetEvent('tokyo_box:server:savePlaylist', function(name, tracks)
+    local source = source
     
-    -- Atualizar volume
-    TriggerClientEvent("tokyo-box:volumeChanged", -1, volume)
+    if not name or not tracks then return end
+    
+    MySQL.insert('INSERT INTO tokyo_box_playlists (name, tracks) VALUES (?, ?)', {
+        name,
+        json.encode(tracks)
+    }, function(id)
+        if id then
+            TriggerClientEvent('tokyo_box:client:updateState', source, {
+                playlists = {
+                    {
+                        id = id,
+                        name = name,
+                        tracks = tracks
+                    }
+                }
+            })
+        end
+    end)
+end)
+
+RegisterNetEvent('tokyo_box:server:deletePlaylist', function(id)
+    local source = source
+    
+    if not id then return end
+    
+    MySQL.query('DELETE FROM tokyo_box_playlists WHERE id = ?', {id}, function(affectedRows)
+        if affectedRows > 0 then
+            TriggerClientEvent('tokyo_box:client:updateState', source, {
+                playlists = {}
+            })
+        end
+    end)
+end)
+
+RegisterNetEvent('tokyo_box:server:updateState', function(newState)
+    local source = source
+    
+    if not newState then return end
+    
+    players[source] = newState
+    
+    TriggerClientEvent('tokyo_box:client:updateState', -1, {
+        players = players
+    })
 end)
 
 -- Comandos
-RegisterCommand("tokyobox_reload", function(source, args, rawCommand)
-    -- Verificar permissão
-    if Config.Permissions.enabled then
-        local hasPermission = false
-        for _, group in ipairs(Config.Permissions.groups) do
-            if IsPlayerAceAllowed(source, "command.tokyobox_reload") then
-                hasPermission = true
-                break
-            end
-        end
-        
-        if not hasPermission then
-            TriggerClientEvent("tokyo-box:notification", source, {
-                type = "error",
-                message = "Sem permissão"
-            })
-            return
-        end
-    end
+QBCore.Commands.Add('tokyobox', 'Abrir Tokyo Box', {}, false, function(source)
+    TriggerClientEvent('tokyo_box:client:showUI', source)
+end)
+
+-- Inicialização
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
     
-    -- Recarregar recurso
-    StopResource(GetCurrentResourceName())
-    Wait(1000)
-    StartResource(GetCurrentResourceName())
+    initialize()
+end)
+
+AddEventHandler('playerDropped', function()
+    local source = source
+    players[source] = nil
     
-    TriggerClientEvent("tokyo-box:notification", source, {
-        type = "success",
-        message = "Recurso recarregado"
+    TriggerClientEvent('tokyo_box:client:updateState', -1, {
+        players = players
     })
-end, false) 
+end) 

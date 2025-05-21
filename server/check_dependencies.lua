@@ -3,48 +3,112 @@
     Versão: 1.0.0
 ]]
 
--- Verificar dependências
-local function CheckDependencies()
-    print("^3[Tokyo Box] Verificando dependências...^7")
+local QBCore = exports['qb-core']:GetCoreObject()
+
+-- Funções auxiliares
+local function log(message)
+    if Config.Debug then
+        print("^3[DEBUG] Tokyo Box - Dependencies: " .. message .. "^7")
+    end
+end
+
+-- Função para verificar estado do recurso
+local function checkResource(resourceName)
+    local state = GetResourceState(resourceName)
+    if state == 'started' then
+        return true
+    elseif state == 'stopped' then
+        log("Recurso parado: " .. resourceName)
+        return false
+    elseif state == 'starting' then
+        log("Recurso iniciando: " .. resourceName)
+        return false
+    elseif state == 'stopping' then
+        log("Recurso parando: " .. resourceName)
+        return false
+    else
+        log("Recurso não encontrado: " .. resourceName)
+        return false
+    end
+end
+
+-- Função para verificar dependências
+local function checkDependencies()
+    -- Dependências obrigatórias
+    local requiredDeps = {
+        'qb-core',
+        'oxmysql'
+    }
     
-    -- Verificar recursos obrigatórios
-    for _, resource in ipairs(Config.Dependencies.required) do
-        local state = GetResourceState(resource)
-        if state ~= "started" then
-            print("^1[Tokyo Box] Erro: Recurso obrigatório '" .. resource .. "' não está iniciado^7")
-            return false
+    -- Dependências opcionais
+    local optionalDeps = {
+        'ox_lib'
+    }
+    
+    -- Verificar dependências obrigatórias
+    local missingRequired = {}
+    for _, dep in ipairs(requiredDeps) do
+        if not checkResource(dep) then
+            table.insert(missingRequired, dep)
         end
     end
     
-    -- Verificar recursos opcionais
-    for _, resource in ipairs(Config.Dependencies.optional) do
-        local state = GetResourceState(resource)
-        if state ~= "started" then
-            print("^3[Tokyo Box] Aviso: Recurso opcional '" .. resource .. "' não está iniciado^7")
-        end
-    end
-    
-    -- Verificar configuração
-    if not Config then
-        print("^1[Tokyo Box] Erro: Configuração não encontrada^7")
+    if #missingRequired > 0 then
+        log("Dependências obrigatórias ausentes: " .. table.concat(missingRequired, ", "))
         return false
     end
     
-    -- Verificar chave da API
+    -- Verificar dependências opcionais
+    local missingOptional = {}
+    for _, dep in ipairs(optionalDeps) do
+        if not checkResource(dep) then
+            table.insert(missingOptional, dep)
+        end
+    end
+    
+    if #missingOptional > 0 then
+        log("Dependências opcionais ausentes: " .. table.concat(missingOptional, ", "))
+    end
+    
+    -- Verificar API key
     if not Config.API.key or Config.API.key == "" then
-        print("^1[Tokyo Box] Erro: Chave da API do YouTube não configurada^7")
+        log("API key não configurada")
         return false
     end
     
-    print("^2[Tokyo Box] Todas as dependências verificadas com sucesso^7")
+    -- Verificar conexão com banco de dados
+    MySQL.ready(function()
+        MySQL.query('SELECT 1', {}, function(result)
+            if not result then
+                log("Falha na conexão com banco de dados")
+                return false
+            end
+        end)
+    end)
+    
     return true
 end
 
--- Executar verificação
-CreateThread(function()
-    if not CheckDependencies() then
-        print("^1[Tokyo Box] Erro: Falha na verificação de dependências. Parando recurso...^7")
-        StopResource(GetCurrentResourceName())
-        return
+-- Eventos
+RegisterNetEvent('tokyo_box:server:checkDependencies', function()
+    local source = source
+    
+    if checkDependencies() then
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "success",
+            message = "Todas as dependências estão instaladas"
+        })
+    else
+        TriggerClientEvent("tokyo_box:notification", source, {
+            type = "error",
+            message = "Algumas dependências estão ausentes"
+        })
     end
-end) 
+end)
+
+-- Exportações
+exports('CheckDependencies', checkDependencies)
+
+return {
+    CheckDependencies = checkDependencies
+} 
