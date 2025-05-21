@@ -83,22 +83,22 @@ function loadUIElements() {
     console.log('[Tokyo Box] Carregando elementos da UI...');
     
     // Elementos principais
-    window.phoneContainer = document.querySelector('.phone-container');
-    window.albumCover = document.getElementById('current-cover');
-    window.trackTitle = document.getElementById('track-title');
-    window.trackArtist = document.getElementById('track-artist');
-    window.playlist = document.getElementById('playlist');
+    elements.phoneContainer = document.querySelector('.phone-container');
+    elements.albumCover = document.getElementById('current-cover');
+    elements.trackTitle = document.getElementById('track-title');
+    elements.trackArtist = document.getElementById('track-artist');
+    elements.playlist = document.getElementById('playlist');
     
     // Botões de controle
-    window.playBtn = document.getElementById('play-btn');
-    window.prevBtn = document.getElementById('prev-btn');
-    window.nextBtn = document.getElementById('next-btn');
-    window.shuffleBtn = document.getElementById('shuffle-btn');
-    window.repeatBtn = document.getElementById('repeat-btn');
-    window.settingsBtn = document.getElementById('settings-btn');
+    elements.playBtn = document.getElementById('play-btn');
+    elements.prevBtn = document.getElementById('prev-btn');
+    elements.nextBtn = document.getElementById('next-btn');
+    elements.shuffleBtn = document.getElementById('shuffle-btn');
+    elements.repeatBtn = document.getElementById('repeat-btn');
+    elements.settingsBtn = document.getElementById('settings-btn');
     
     // Controle de volume
-    window.volumeSlider = document.getElementById('volume-slider');
+    elements.volumeSlider = document.getElementById('volume-slider');
     
     // Verificar elementos obrigatórios
     const requiredElements = [
@@ -226,21 +226,21 @@ function initializeElements() {
     console.log('[Tokyo Box] Inicializando elementos...');
     
     // Botões de controle
-    window.playBtn.addEventListener('click', () => {
+    elements.playBtn.addEventListener('click', () => {
         fetchAPI('playPause');
     });
     
-    window.prevBtn.addEventListener('click', () => {
+    elements.prevBtn.addEventListener('click', () => {
         fetchAPI('prevTrack');
     });
     
-    window.nextBtn.addEventListener('click', () => {
+    elements.nextBtn.addEventListener('click', () => {
         fetchAPI('nextTrack');
     });
     
     // Controle de volume
     let volumeTimeout;
-    window.volumeSlider.addEventListener('input', (e) => {
+    elements.volumeSlider.addEventListener('input', (e) => {
         const volume = parseInt(e.target.value);
         
         clearTimeout(volumeTimeout);
@@ -250,11 +250,11 @@ function initializeElements() {
     });
     
     // Botões de playlist
-    window.shuffleBtn.addEventListener('click', () => {
+    elements.shuffleBtn.addEventListener('click', () => {
         fetchAPI('toggleShuffle');
     });
     
-    window.repeatBtn.addEventListener('click', () => {
+    elements.repeatBtn.addEventListener('click', () => {
         fetchAPI('toggleRepeat');
     });
     
@@ -267,21 +267,21 @@ function updateUIState(newState) {
     
     // Atualizar informações da música
     if (newState.currentTrack) {
-        window.trackTitle.textContent = newState.currentTrack.title;
-        window.trackArtist.textContent = newState.currentTrack.artist;
-        window.albumCover.src = newState.currentTrack.cover || 'img/default-cover.png';
+        elements.trackTitle.textContent = newState.currentTrack.title;
+        elements.trackArtist.textContent = newState.currentTrack.artist;
+        elements.albumCover.src = newState.currentTrack.cover || 'img/default-cover.png';
     }
     
     // Atualizar botão de play/pause
-    window.playBtn.textContent = newState.isPlaying ? '⏸' : '▶';
+    elements.playBtn.textContent = newState.isPlaying ? '⏸' : '▶';
     
     // Atualizar controle de volume
-    window.volumeSlider.value = newState.volume || DEFAULT_VOLUME;
+    elements.volumeSlider.value = newState.volume || DEFAULT_VOLUME;
     
     // Atualizar botões de shuffle e repeat
-    window.shuffleBtn.style.color = newState.isShuffled ? 'var(--primary-color)' : 'var(--text-color)';
-    window.repeatBtn.textContent = newState.repeatMode === 'one' ? '🔂' : '🔁';
-    window.repeatBtn.style.color = newState.repeatMode !== 'none' ? 'var(--primary-color)' : 'var(--text-color)';
+    elements.shuffleBtn.style.color = newState.isShuffled ? 'var(--primary-color)' : 'var(--text-color)';
+    elements.repeatBtn.textContent = newState.repeatMode === 'one' ? '🔂' : '🔁';
+    elements.repeatBtn.style.color = newState.repeatMode !== 'none' ? 'var(--primary-color)' : 'var(--text-color)';
     
     // Atualizar estado
     Object.assign(state, newState);
@@ -293,8 +293,8 @@ function showUI() {
     
     console.log('[Tokyo Box] Mostrando UI...');
     state.isVisible = true;
-    window.phoneContainer.style.display = 'block';
-    window.phoneContainer.classList.add('fade-in');
+    elements.phoneContainer.style.display = 'block';
+    elements.phoneContainer.classList.add('fade-in');
 }
 
 // Função para esconder a UI
@@ -303,8 +303,8 @@ function hideUI() {
     
     console.log('[Tokyo Box] Escondendo UI...');
     state.isVisible = false;
-    window.phoneContainer.style.display = 'none';
-    window.phoneContainer.classList.remove('fade-in');
+    elements.phoneContainer.style.display = 'none';
+    elements.phoneContainer.classList.remove('fade-in');
 }
 
 // Função para atualizar o estado

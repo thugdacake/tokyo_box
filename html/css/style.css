@@ -1,7 +1,7 @@
 /* Variáveis CSS */
 :root {
     /* Cores */
-    --primary-color: #4a90e2;
+    --primary-color: #007AFF;
     --secondary-color: #2d2d2d;
     --tertiary-color: #191414;
     --background-color: rgba(20, 20, 20, 0.95);
@@ -10,7 +10,7 @@
     --text-primary: #FFFFFF;
     --text-secondary: #B3B3B3;
     --text-tertiary: #727272;
-    --text-color: #ffffff;
+    --text-color: #FFFFFF;
     --accent-color: #4a90e2;
     
     /* Dimensões */
@@ -29,13 +29,12 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-primary);
-    line-height: 1.5;
+    width: 100vw;
+    height: 100vh;
     overflow: hidden;
 }
 
@@ -385,9 +384,15 @@ body {
     height: 640px;
     background-color: var(--background-color);
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    display: none;
     overflow: hidden;
     transition: var(--transition);
+}
+
+.phone-container.fade-in {
+    display: block;
+    animation: fadeIn 0.3s ease;
 }
 
 /* Notch */
@@ -397,25 +402,26 @@ body {
     left: 50%;
     transform: translateX(-50%);
     width: 150px;
-    height: 32px;
-    background-color: var(--background-color);
-    border-bottom-left-radius: 18px;
-    border-bottom-right-radius: 18px;
+    height: 30px;
+    background-color: #000;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 8px;
-    z-index: 10;
 }
 
-.notch-camera {
+.camera {
     width: 12px;
     height: 12px;
     background-color: #1a1a1a;
     border-radius: 50%;
+    border: 2px solid #333;
 }
 
-.notch-speaker {
+.speaker {
     width: 60px;
     height: 6px;
     background-color: #1a1a1a;
@@ -447,10 +453,10 @@ body {
 
 /* Capa do Álbum */
 .album-cover {
-    width: 300px;
-    height: 300px;
+    width: 280px;
+    height: 280px;
     margin: 0 auto 20px;
-    border-radius: 12px;
+    border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -464,18 +470,19 @@ body {
 /* Informações da Música */
 .now-playing {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
-.now-playing h2 {
+.track-title {
+    font-size: 20px;
+    font-weight: 600;
     color: var(--text-color);
-    font-size: 18px;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
 }
 
-.now-playing p {
-    color: #888;
-    font-size: 14px;
+.track-artist {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 /* Controles de Música */
@@ -484,58 +491,58 @@ body {
     justify-content: center;
     align-items: center;
     gap: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
 .control-btn {
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
     border: none;
-    background-color: var(--secondary-color);
     color: var(--text-color);
     font-size: 20px;
     cursor: pointer;
     transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .control-btn:hover {
-    background-color: var(--primary-color);
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .play-btn {
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
     font-size: 24px;
+    background-color: var(--primary-color);
+}
+
+.play-btn:hover {
+    background-color: #0066CC;
 }
 
 /* Controle de Volume */
 .volume-control {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
-.volume-icon {
-    color: var(--text-color);
-    font-size: 20px;
-}
-
-#volume-slider {
-    flex: 1;
+.volume-slider {
+    width: 100%;
     height: 4px;
     -webkit-appearance: none;
-    background: var(--secondary-color);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 2px;
     outline: none;
 }
 
-#volume-slider::-webkit-slider-thumb {
+.volume-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 16px;
     height: 16px;
-    background: var(--text-color);
+    background: var(--primary-color);
     border-radius: 50%;
     cursor: pointer;
 }
@@ -555,20 +562,46 @@ body {
 
 .playlist {
     list-style: none;
-    max-height: 150px;
+    max-height: 200px;
     overflow-y: auto;
 }
 
-.playlist li {
-    padding: 8px 12px;
-    color: var(--text-color);
+.playlist-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
     cursor: pointer;
-    border-radius: 6px;
     transition: var(--transition);
 }
 
-.playlist li:hover {
+.playlist-item:hover {
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+.playlist-item img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin-right: 12px;
+}
+
+.playlist-item-info {
+    flex: 1;
+}
+
+.playlist-item-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 4px;
+}
+
+.playlist-item-artist {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
 }
 
 /* Footer */
@@ -591,6 +624,10 @@ body {
 }
 
 .footer-btn:hover {
+    color: var(--primary-color);
+}
+
+.footer-btn.active {
     color: var(--primary-color);
 }
 
@@ -625,16 +662,30 @@ body {
 
 /* Animações */
 @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.phone-container {
-    animation: fadeIn 0.3s ease;
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+    width: 6px;
 }
 
-/* Estado Minimizado */
-.phone-container.minimized {
-    transform: scale(0.5);
-    opacity: 0.7;
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }

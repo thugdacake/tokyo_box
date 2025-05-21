@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'Seu Nome'
-description 'Tokyo Box - Sistema de Música'
+author 'Tokyo Box'
+description 'Sistema de música para FiveM'
 version '1.0.0'
 
 shared_scripts {
@@ -11,31 +11,20 @@ shared_scripts {
 }
 
 client_scripts {
-    'client/nui.lua',
-    'client/events.lua',
-    'client/commands.lua'
+    'client/*.lua'
 }
 
 server_scripts {
-    'server/youtube.lua',
-    'server/events.lua',
-    'server/commands.lua'
+    'server/*.lua'
 }
 
 ui_page 'html/index.html'
 
 files {
     'html/index.html',
-    'html/css/style.css',
-    'html/js/nui.js',
-    'html/js/player.js',
-    'html/js/playlist.js',
-    'html/js/search.js',
-    'html/js/settings.js',
-    'html/js/utils.js',
-    'html/assets/*.png',
-    'html/assets/*.svg',
-    'html/assets/*.mp3'
+    'html/css/*.css',
+    'html/js/*.js',
+    'html/img/*.png'
 }
 
 dependencies {

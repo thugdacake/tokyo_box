@@ -24,16 +24,27 @@ Config.UI = {
     defaultScale = 1.0,
     maxResults = 10,
     updateInterval = 1000,
-    fadeTime = 0.3
+    fadeTime = 0.3,
+    position = 'bottom-right',
+    width = 360,
+    height = 640,
+    animation = true,
+    animationDuration = 300,
+    borderRadius = 36,
+    shadow = '0 8px 24px rgba(0, 0, 0, 0.35)'
 }
 
 -- Configurações do Player
 Config.Player = {
     maxDistance = 10.0,
-    defaultVolume = 0.5,
+    defaultVolume = 50,
     fadeTime = 0.3,
-    minVolume = 0.0,
-    maxVolume = 1.0
+    minVolume = 0,
+    maxVolume = 100,
+    fadeInTime = 1000,
+    fadeOutTime = 1000,
+    crossfadeTime = 2000,
+    defaultCover = 'img/default-cover.png'
 }
 
 -- Configurações de Permissões
@@ -48,8 +59,8 @@ Config.Permissions = {
 -- Configurações de Comandos
 Config.Commands = {
     main = 'tokyobox',
-    spawnBox = 'tokyobox_spawnBox',
-    btToggle = 'tokyobox_btToggle',
+    spawnBox = 'tokyobox_spawn',
+    btToggle = 'tokyobox_bt',
     lang = 'tokyobox_lang',
     theme = 'tokyobox_theme'
 }
@@ -65,20 +76,26 @@ Config.Notifications = {
 Config.Database = {
     useFramework = true,
     useCustom = false,
-    tablePrefix = 'tokyo_box_'
+    tablePrefix = 'tokyo_box_',
+    tableName = 'tokyo_box_playlists'
 }
 
 -- Configurações de Cache
 Config.Cache = {
     enabled = true,
     maxSize = 100,
-    expireTime = 3600
+    expireTime = 3600,
+    expirationTime = 3600
 }
 
 -- Configurações de Debug
 Config.Debug = {
     enabled = false,
-    level = 'info'
+    level = 'info',
+    logLevel = 'info',
+    file = 'tokyo-box.log',
+    maxSize = 1024 * 1024 * 5, -- 5MB
+    maxFiles = 5
 }
 
 -- Instruções para gerar chave da API do YouTube
@@ -103,13 +120,21 @@ Config.DefaultLocale = "pt-BR"
 Config.DefaultTheme = "dark"
 Config.DefaultScale = 1.0
 Config.OpenCooldown = 500 -- ms
+Config.Language = 'pt-BR'
+Config.Theme = 'dark'
 
 -- Configurações do YouTube
 Config.YouTube = {
     APIKey = "YOUR_API_KEY_HERE", -- Substitua pela sua chave de API
     QuotaLimit = 10000, -- Limite diário de quota
     CacheDuration = 3600, -- Duração do cache em segundos
-    RequestInterval = 1000 -- Intervalo entre requisições em milissegundos
+    RequestInterval = 1000, -- Intervalo entre requisições em milissegundos
+    apiKey = 'SUA_CHAVE_AQUI',
+    apiEndpoint = 'https://www.googleapis.com/youtube/v3',
+    searchLimit = 10,
+    maxResults = 50,
+    regionCode = 'BR',
+    relevanceLanguage = 'pt'
 }
 
 -- Configurações de permissões
@@ -137,7 +162,10 @@ Config.Dependencies = {
     optional = {
         "qb-core",
         "es_extended"
-    }
+    },
+    framework = 'qb-core',
+    database = 'oxmysql',
+    cache = 'oxmysql'
 }
 
 -- Configurações de teclas
@@ -147,22 +175,30 @@ Config.Keys = {
     pause = 'F9',
     next = 'F10',
     prev = 'F11',
-    volume = 'F12'
+    volume = 'F12',
+    open = 'F7',
+    playPause = 'MEDIA_PLAY_PAUSE',
+    previous = 'MEDIA_PREVIOUS',
+    volumeUp = 'MEDIA_VOLUME_UP',
+    volumeDown = 'MEDIA_VOLUME_DOWN',
+    mute = 'MEDIA_MUTE'
 }
 
 -- Configurações de temas
 Config.Themes = {
     dark = {
-        primary = "#1a1a1a",
-        secondary = "#2d2d2d",
-        accent = "#4a90e2",
-        text = "#ffffff"
+        primary = '#007AFF',
+        background = 'rgba(20, 20, 20, 0.95)',
+        text = '#FFFFFF',
+        secondary = '#2D2D2D',
+        accent = '#4A90E2'
     },
     light = {
-        primary = "#ffffff",
-        secondary = "#f5f5f5",
-        accent = "#4a90e2",
-        text = "#000000"
+        primary = '#007AFF',
+        background = 'rgba(255, 255, 255, 0.95)',
+        text = '#000000',
+        secondary = '#F2F2F2',
+        accent = '#4A90E2'
     }
 }
 
@@ -206,6 +242,25 @@ Config.API = {
     key = 'YOUR_API_KEY',
     baseUrl = 'https://www.googleapis.com/youtube/v3',
     cacheTime = 3600
+}
+
+-- Configurações gerais
+Config.General = {
+    debug = false,
+    language = 'pt-BR',
+    theme = 'dark',
+    notifications = true,
+    cache = true,
+    database = true
+}
+
+-- Configurações de log
+Config.Log = {
+    enabled = true,
+    level = 'info',
+    file = 'tokyo-box.log',
+    maxSize = 1024 * 1024 * 5, -- 5MB
+    maxFiles = 5
 }
 
 return Config
