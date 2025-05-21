@@ -1,144 +1,115 @@
 --[[
     Tokyo Box - Configurações
-    Versão 1.0.0
+    Versão: 1.0.0
 ]]
 
-Config = {}
-
--- Framework
-Config.Framework = 'qb-core'
-
--- API do YouTube
-Config.YouTube = {
-    apiKey = '', -- Configure sua chave aqui
-    apiEndpoint = 'https://www.googleapis.com/youtube/v3',
-    searchLimit = 10,
-    maxResults = 50,
-    regionCode = 'BR',
-    relevanceLanguage = 'pt',
-    quotaLimit = 10000,
-    cacheDuration = 3600
-}
-
--- Configurações da UI
-Config.UI = {
-    position = 'bottom-right',
-    width = 360,
-    height = 640,
-    scale = 1.0,
-    animation = true,
-    animationDuration = 300,
-    borderRadius = 36,
-    shadow = '0 8px 24px rgba(0, 0, 0, 0.35)'
-}
-
--- Configurações do Player
-Config.Player = {
-    defaultVolume = 50,
-    minVolume = 0,
-    maxVolume = 100,
-    fadeInTime = 1000,
-    fadeOutTime = 1000,
-    crossfadeTime = 2000,
-    defaultCover = 'img/default-cover.png'
-}
-
--- Configurações de permissões
-Config.Permissions = {
-    useCommand = true,
-    playMusic = true,
-    controlPlayback = true,
-    adjustVolume = true,
-    managePlaylist = true
-}
-
--- Configurações de comandos
-Config.Commands = {
-    main = 'tokyobox',
-    spawnBox = 'tokyobox_spawn',
-    btToggle = 'tokyobox_bt',
-    lang = 'tokyobox_lang',
-    theme = 'tokyobox_theme'
-}
-
--- Configurações de notificações
-Config.Notifications = {
-    enabled = true,
-    position = 'top-right',
-    duration = 3000
-}
-
--- Configurações do banco de dados
-Config.Database = {
-    useFramework = true,
-    tableName = 'tokyo_box_playlists'
-}
-
--- Configurações de cache
-Config.Cache = {
-    enabled = true,
-    maxSize = 100,
-    expirationTime = 3600
-}
-
--- Configurações de debug
-Config.Debug = {
-    enabled = false,
-    level = 'info',
-    file = 'tokyo-box.log',
-    maxSize = 1024 * 1024 * 5, -- 5MB
-    maxFiles = 5
-}
-
--- Configurações de teclas
-Config.Keys = {
-    open = 'F7',
-    playPause = 'MEDIA_PLAY_PAUSE',
-    next = 'MEDIA_NEXT',
-    previous = 'MEDIA_PREVIOUS',
-    volumeUp = 'MEDIA_VOLUME_UP',
-    volumeDown = 'MEDIA_VOLUME_DOWN',
-    mute = 'MEDIA_MUTE'
-}
-
--- Configurações de temas
-Config.Themes = {
-    dark = {
-        primary = '#007AFF',
-        background = 'rgba(20, 20, 20, 0.95)',
-        text = '#FFFFFF',
-        secondary = '#2D2D2D',
-        accent = '#4A90E2'
+local Config = {
+    -- Framework
+    Framework = 'qb-core',
+    
+    -- YouTube API
+    YouTube = {
+        apiKey = '', -- Sua chave da API do YouTube aqui
+        quotaLimit = 10000,
+        quotaUsed = 0,
+        lastReset = os.time()
     },
-    light = {
-        primary = '#007AFF',
-        background = 'rgba(255, 255, 255, 0.95)',
-        text = '#000000',
-        secondary = '#F2F2F2',
-        accent = '#4A90E2'
-    }
-}
-
--- Configurações de idiomas
-Config.Languages = {
-    ['pt-BR'] = {
-        name = 'Português (Brasil)',
-        code = 'pt-BR'
+    
+    -- UI
+    UI = {
+        defaultTheme = 'dark',
+        defaultVolume = 50,
+        maxVolume = 100,
+        minVolume = 0
     },
-    ['en-US'] = {
-        name = 'English (US)',
-        code = 'en-US'
-    }
-}
-
--- Configurações de dependências
-Config.Dependencies = {
-    required = {
+    
+    -- Player
+    Player = {
+        defaultVolume = 0.5,
+        minVolume = 0.0,
+        maxVolume = 1.0,
+        fadeInTime = 1000,
+        fadeOutTime = 1000
+    },
+    
+    -- Permissões
+    Permissions = {
+        useMusic = true,
+        managePlaylists = true,
+        skipTracks = true,
+        controlVolume = true
+    },
+    
+    -- Comandos
+    Commands = {
+        prefix = '/',
+        music = 'music',
+        playlist = 'playlist',
+        volume = 'volume'
+    },
+    
+    -- Notificações
+    Notifications = {
+        enabled = true,
+        duration = 5000,
+        position = 'top-right'
+    },
+    
+    -- Banco de Dados
+    Database = {
+        enabled = true,
+        tablePrefix = 'tokyo_box_',
+        saveInterval = 300 -- 5 minutos
+    },
+    
+    -- Cache
+    Cache = {
+        enabled = true,
+        ttl = 3600, -- 1 hora
+        maxSize = 1000
+    },
+    
+    -- Debug
+    Debug = {
+        enabled = false,
+        level = 'info'
+    },
+    
+    -- Teclas
+    Keys = {
+        toggle = 'F7',
+        next = 'MEDIA_NEXT',
+        prev = 'MEDIA_PREV',
+        play = 'MEDIA_PLAY',
+        pause = 'MEDIA_PAUSE'
+    },
+    
+    -- Temas
+    Themes = {
+        dark = {
+            primary = '#1a1a1a',
+            secondary = '#2d2d2d',
+            accent = '#4CAF50',
+            text = '#ffffff'
+        },
+        light = {
+            primary = '#ffffff',
+            secondary = '#f5f5f5',
+            accent = '#4CAF50',
+            text = '#000000'
+        }
+    },
+    
+    -- Idiomas
+    Languages = {
+        default = 'pt-BR',
+        available = {'pt-BR', 'en-US'}
+    },
+    
+    -- Dependências
+    Dependencies = {
         'qb-core',
         'oxmysql'
-    },
-    optional = {
-        'ox_lib'
     }
 }
 

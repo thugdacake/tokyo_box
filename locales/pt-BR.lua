@@ -77,22 +77,27 @@ local Translations = {
 -- Sistema de tradução
 Lang = {
     t = function(key, ...)
+        if type(key) ~= 'string' then
+            print("[Tokyo Box] Chave de tradução inválida: " .. tostring(key))
+            return 'Chave inválida'
+        end
+
         local args = {...}
         local text = Translations
         
         -- Navegar pela estrutura aninhada
-        for k in string.gmatch(tostring(key), "([^.]+)") do
+        for k in string.gmatch(key, "([^.]+)") do
             if type(text) == "table" then
                 text = text[k]
             else
-                print("[Tokyo Box] Tradução faltando: " .. tostring(key))
-                return 'Tradução não encontrada: ' .. tostring(key)
+                print("[Tokyo Box] Tradução faltando: " .. key)
+                return 'Tradução não encontrada: ' .. key
             end
         end
         
-        if not text then
-            print("[Tokyo Box] Tradução faltando: " .. tostring(key))
-            return 'Tradução não encontrada: ' .. tostring(key)
+        if type(text) ~= 'string' then
+            print("[Tokyo Box] Tradução inválida para: " .. key)
+            return 'Tradução inválida: ' .. key
         end
         
         if #args > 0 then
@@ -103,15 +108,19 @@ Lang = {
     end,
     
     has = function(key)
+        if type(key) ~= 'string' then
+            return false
+        end
+
         local text = Translations
-        for k in string.gmatch(tostring(key), "([^.]+)") do
+        for k in string.gmatch(key, "([^.]+)") do
             if type(text) == "table" then
                 text = text[k]
             else
                 return false
             end
         end
-        return text ~= nil
+        return type(text) == 'string'
     end,
     
     getAll = function()

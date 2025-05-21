@@ -5,7 +5,13 @@
 ]]
 
 -- Carregar configurações
-local QBCore = exports['qb-core']:GetCoreObject()
+local Config = exports['tokyo_box']:GetConfig()
+
+-- Verificar configuração
+if not Config or not Config.YouTube or not Config.YouTube.apiKey then
+    print("^1[Tokyo Box] Erro: Configuração do YouTube não encontrada^0")
+    return
+end
 
 -- API do YouTube
 local YouTubeAPI = {
@@ -56,7 +62,7 @@ local function HandleError(error, context)
     
     Log("error", "Erro em " .. context .. ": " .. error)
     
-    if consecutiveErrors >= Config.System.ErrorRetryCount then
+    if consecutiveErrors >= 3 then
         Log("error", "Muitos erros consecutivos detectados. Reiniciando recurso...")
         TriggerEvent("tokyo_box:restartResource")
     end
@@ -79,7 +85,7 @@ local function CleanExpiredCache()
     local expiredCount = 0
     
     for videoId, data in pairs(videoCache) do
-        if now - data.timestamp > Config.YouTube.CacheDuration * 1000 then
+        if now - data.timestamp > Config.Cache.ttl * 1000 then
             videoCache[videoId] = nil
             expiredCount = expiredCount + 1
         end
@@ -202,11 +208,10 @@ local function searchVideos(query, cb)
     end
     
     -- Fazer requisição à API
-    local url = string.format("%s/search?part=snippet&q=%s&type=video&maxResults=%d&key=%s",
-        Config.API.baseUrl,
+    local url = string.format("https://www.googleapis.com/youtube/v3/search?part=snippet&q=%s&type=video&maxResults=%d&key=%s",
         query,
-        Config.API.maxResults,
-        Config.API.key
+        10,
+        YouTubeAPI.apiKey
     )
     
     PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
@@ -244,15 +249,6 @@ local function searchVideos(query, cb)
                 time = os.time(),
                 data = videos
             }
-            
-            -- Limpar cache antigo
-            local count = 0
-            for k, v in pairs(requestCache) do
-                count = count + 1
-                if count > Config.Cache.maxSize then
-                    requestCache[k] = nil
-                end
-            end
         end
         
         if cb then
@@ -282,10 +278,9 @@ local function getVideoDetails(videoId, cb)
     end
     
     -- Fazer requisição à API
-    local url = string.format("%s/videos?part=contentDetails,snippet&id=%s&key=%s",
-        Config.API.baseUrl,
+    local url = string.format("https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id=%s&key=%s",
         videoId,
-        Config.API.key
+        YouTubeAPI.apiKey
     )
     
     PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
@@ -319,15 +314,6 @@ local function getVideoDetails(videoId, cb)
                 time = os.time(),
                 data = details
             }
-            
-            -- Limpar cache antigo
-            local count = 0
-            for k, v in pairs(requestCache) do
-                count = count + 1
-                if count > Config.Cache.maxSize then
-                    requestCache[k] = nil
-                end
-            end
         end
         
         if cb then
@@ -400,35 +386,8 @@ Citizen.CreateThread(function()
         return
     end
     
-    -- Verificar URL base
-    if not Config.API.BaseURL or Config.API.BaseURL == "" then
-        HandleError("URL base da API não configurada", "Initialize")
-        return
-    end
-    
     YouTubeAPI.isInitialized = true
     Log("info", "API do YouTube inicializada")
-    
-    -- Registrar eventos
-    RegisterNetEvent("tokyo_box:searchVideo")
-    AddEventHandler("tokyo_box:searchVideo", function(query)
-        local source = source
-        local success, result = YouTubeAPI.SearchVideo(query)
-        TriggerClientEvent("tokyo_box:searchVideoResult", source, {
-            success = success,
-            data = result
-        })
-    end)
-    
-    RegisterNetEvent("tokyo_box:getVideoDetails")
-    AddEventHandler("tokyo_box:getVideoDetails", function(videoId)
-        local source = source
-        local success, result = YouTubeAPI.GetVideoDetails(videoId)
-        TriggerClientEvent("tokyo_box:getVideoDetailsResult", source, {
-            success = success,
-            data = result
-        })
-    end)
 end)
 
 -- Adicionar limpeza periódica do cache

@@ -168,8 +168,8 @@ function Database.CreateTables()
             query = [[
                 CREATE TABLE IF NOT EXISTS tokyo_box_settings (
                     id INT AUTO_INCREMENT PRIMARY KEY,
-                    key VARCHAR(255) NOT NULL UNIQUE,
-                    value JSON NOT NULL,
+                    `key` VARCHAR(255) NOT NULL UNIQUE,
+                    `value` TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
@@ -280,7 +280,7 @@ end
 
 -- Funções de configuração
 function Database.GetSetting(key, cb)
-    MySQL.query('SELECT value FROM tokyo_box_settings WHERE `key` = ?', {key}, function(results)
+    MySQL.query('SELECT `value` FROM tokyo_box_settings WHERE `key` = ?', {key}, function(results)
         if cb then
             if results[1] then
                 cb(json.decode(results[1].value))
@@ -292,7 +292,7 @@ function Database.GetSetting(key, cb)
 end
 
 function Database.SetSetting(key, value, cb)
-    MySQL.insert('INSERT INTO tokyo_box_settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', {
+    MySQL.insert('INSERT INTO tokyo_box_settings (`key`, `value`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `value` = ?', {
         key,
         json.encode(value),
         json.encode(value)
