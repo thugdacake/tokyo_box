@@ -1,14 +1,14 @@
 fx_version 'cerulean'
 game 'gta5'
 
-author 'Tokyo Box'
+author 'thugdacake'
 description 'Sistema de música para FiveM'
 version '1.0.0'
 
 shared_scripts {
     '@qb-core/shared/locale.lua',
-    'config.lua',
-    'locales/*.lua'
+    'locales/*.lua',
+    'config.lua'
 }
 
 client_scripts {
@@ -26,7 +26,8 @@ files {
     'html/index.html',
     'html/css/*.css',
     'html/js/*.js',
-    'html/img/*.png'
+    'html/img/*.png',
+    'html/fonts/*.ttf'
 }
 
 dependencies {

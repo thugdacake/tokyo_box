@@ -17,11 +17,18 @@ CreateThread(function()
     
     -- Carregar configuração do arquivo
     local success, result = pcall(function()
-        return LoadResourceFile(GetCurrentResourceName(), 'config.lua')
+        local configPath = GetResourcePath(GetCurrentResourceName()) .. '/config.lua'
+        local file = io.open(configPath, 'r')
+        if not file then
+            error("Arquivo config.lua não encontrado")
+        end
+        local content = file:read('*all')
+        file:close()
+        return content
     end)
     
     if not success or not result then
-        print("^1[Tokyo Box] Erro ao carregar config.lua^0")
+        print("^1[Tokyo Box] Erro ao carregar config.lua: " .. tostring(result) .. "^0")
         return
     end
     
@@ -52,6 +59,12 @@ CreateThread(function()
             print("^1[Tokyo Box] Erro: Dependência " .. dependency .. " não encontrada^0")
             return
         end
+    end
+    
+    -- Verificar configuração do YouTube
+    if not Config.YouTube or not Config.YouTube.apiKey then
+        print("^1[Tokyo Box] Erro: Configuração do YouTube não encontrada^0")
+        return
     end
     
     print("^2[Tokyo Box] Inicializado com sucesso^0")

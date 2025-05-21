@@ -18,13 +18,18 @@ local function LoadConfig()
         return false
     end
     
+    if not result.YouTube or not result.YouTube.apiKey then
+        print("^1[Tokyo Box] Erro: Configuração do YouTube não encontrada^0")
+        return false
+    end
+    
     Config = result
     return true
 end
 
 -- Verificar configuração
-if not LoadConfig() or not Config or not Config.YouTube or not Config.YouTube.apiKey then
-    print("^1[Tokyo Box] Erro: Configuração do YouTube não encontrada^0")
+if not LoadConfig() then
+    print("^1[Tokyo Box] Erro: Configuração não encontrada^0")
     return
 end
 
