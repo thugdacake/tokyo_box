@@ -125,7 +125,7 @@ function Database.CreateTables()
                 CREATE TABLE IF NOT EXISTS tokyo_box_playlists (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    tracks JSON NOT NULL,
+                    tracks TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )

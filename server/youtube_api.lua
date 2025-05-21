@@ -4,14 +4,14 @@
     Versão: 1.0.0
 ]]
 
-local Config = require 'config'
+-- Carregar configurações
 local QBCore = exports['qb-core']:GetCoreObject()
 
 -- API do YouTube
 local YouTubeAPI = {
     isInitialized = false,
-    apiKey = Config.YouTube.APIKey,
-    quotaLimit = Config.YouTube.QuotaLimit,
+    apiKey = Config.YouTube.apiKey,
+    quotaLimit = Config.YouTube.quotaLimit,
     quotaUsed = 0,
     lastReset = os.time()
 }
@@ -31,7 +31,7 @@ local lastReset = os.time()
 
 -- Função de log
 local function Log(level, message)
-    if not Config.System.DebugMode and level == "debug" then
+    if not Config.Debug.enabled and level == "debug" then
         return
     end
     

@@ -78,10 +78,21 @@ local Translations = {
 Lang = {
     t = function(key, ...)
         local args = {...}
-        local text = Translations[key]
+        local text = Translations
+        
+        -- Navegar pela estrutura aninhada
+        for k in string.gmatch(tostring(key), "([^.]+)") do
+            if type(text) == "table" then
+                text = text[k]
+            else
+                print("[Tokyo Box] Tradução faltando: " .. tostring(key))
+                return 'Tradução não encontrada: ' .. tostring(key)
+            end
+        end
         
         if not text then
-            return 'Tradução não encontrada: ' .. key
+            print("[Tokyo Box] Tradução faltando: " .. tostring(key))
+            return 'Tradução não encontrada: ' .. tostring(key)
         end
         
         if #args > 0 then
@@ -92,7 +103,15 @@ Lang = {
     end,
     
     has = function(key)
-        return Translations[key] ~= nil
+        local text = Translations
+        for k in string.gmatch(tostring(key), "([^.]+)") do
+            if type(text) == "table" then
+                text = text[k]
+            else
+                return false
+            end
+        end
+        return text ~= nil
     end,
     
     getAll = function()
