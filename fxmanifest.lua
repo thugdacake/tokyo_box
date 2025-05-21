@@ -6,8 +6,9 @@ description 'Sistema de música para FiveM'
 version '1.0.0'
 
 shared_scripts {
-    'config.lua',
-    'locales/*.lua'
+    '@qb-core/shared/locale.lua',
+    'locales/*.lua',
+    'config.lua'
 }
 
 client_scripts {
@@ -15,6 +16,7 @@ client_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/*.lua'
 }
 
@@ -28,7 +30,8 @@ files {
 }
 
 dependencies {
-    'qb-core'
+    'qb-core',
+    'oxmysql'
 }
 
 lua54 'yes'
