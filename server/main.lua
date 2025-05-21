@@ -1,3 +1,36 @@
+--[[
+    Tokyo Box - Servidor Principal
+    Versão: 1.0.0
+]]
+
+-- Carregar configuração
+local Config = require 'config'
+
+-- Exportar configuração
+exports('GetConfig', function()
+    return Config
+end)
+
+-- Inicialização
+CreateThread(function()
+    print("^2[Tokyo Box] Inicializando...^0")
+    
+    -- Verificar dependências
+    if not Config.Dependencies then
+        print("^1[Tokyo Box] Erro: Dependências não configuradas^0")
+        return
+    end
+    
+    for _, dependency in ipairs(Config.Dependencies) do
+        if not GetResourceState(dependency) == 'started' then
+            print("^1[Tokyo Box] Erro: Dependência " .. dependency .. " não encontrada^0")
+            return
+        end
+    end
+    
+    print("^2[Tokyo Box] Inicializado com sucesso^0")
+end)
+
 local QBCore = exports['qb-core']:GetCoreObject()
 
 -- Configurações
