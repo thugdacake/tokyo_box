@@ -3,13 +3,13 @@
     Versão: 1.0.0
 ]]
 
-local Config = {
+Config = {
     -- Framework
     Framework = 'qb-core',
     
     -- YouTube API
     YouTube = {
-        apiKey = '', -- Sua chave da API do YouTube aqui
+        apiKey = 'SUA_CHAVE_API_AQUI', -- Substitua pela sua chave da API do YouTube
         quotaLimit = 10000,
         quotaUsed = 0,
         lastReset = os.time()
