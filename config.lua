@@ -9,7 +9,7 @@ Config = {
     
     -- YouTube API
     YouTube = {
-        apiKey = 'SUA_CHAVE_API_AQUI', -- Substitua pela sua chave da API do YouTube
+        apiKey = 'AIzaSyAdzIskTxElZumF29pNBux-PYs7EOXWcDI',
         quotaLimit = 10000,
         quotaUsed = 0,
         lastReset = os.time()
