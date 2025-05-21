@@ -25,3 +25,51 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Arquivos de IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Arquivos de build
+dist/
+build/
+*.zip
+*.rar
+
+# Arquivos de log
+*.log
+logs/
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+
+# Arquivos de cache
+.cache/
+.temp/
+tmp/
+
+# Arquivos de dependências
+node_modules/
+package-lock.json
+yarn.lock
+
+# Arquivos específicos do FiveM
+*.db
+*.sql
+*.sqlite
+*.sqlite3
+
+# Outros
+*.bak
+*.tmp
+*.temp

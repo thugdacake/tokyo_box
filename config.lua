@@ -3,13 +3,15 @@
     Versão: 1.0.0
 ]]
 
+local QBCore = exports['qb-core']:GetCoreObject()
+
 Config = {
     -- Framework
     Framework = 'qb-core',
     
     -- YouTube API
     YouTube = {
-        apiKey = 'AIzaSyAdzIskTxElZumF29pNBux-PYs7EOXWcDI',
+        apiKey = GetConvar('TOKYO_BOX_YOUTUBE_API_KEY', 'AIzaSyAdzIskTxElZumF29pNBux-PYs7EOXWcDI'),
         quotaLimit = 10000,
         quotaUsed = 0,
         lastReset = os.time()
@@ -71,8 +73,8 @@ Config = {
     
     -- Debug
     Debug = {
-        enabled = false,
-        level = 'info'
+        enabled = GetConvar('TOKYO_BOX_DEBUG', 'false') == 'true',
+        level = GetConvar('TOKYO_BOX_DEBUG_LEVEL', 'info')
     },
     
     -- Teclas
@@ -104,13 +106,19 @@ Config = {
     Languages = {
         default = 'pt-BR',
         available = {'pt-BR', 'en-US'}
-    },
-    
-    -- Dependências
-    Dependencies = {
-        'qb-core',
-        'oxmysql'
     }
 }
 
+-- Verificações básicas
+if not QBCore then
+    print('^1[Tokyo Box] Erro: QBCore não está disponível^0')
+    return
+end
+
+if not Config.YouTube.apiKey or Config.YouTube.apiKey == '' then
+    print('^1[Tokyo Box] Erro: Chave da API do YouTube não configurada^0')
+    return
+end
+
+print('^2[Tokyo Box] Configuração carregada com sucesso^0')
 return Config

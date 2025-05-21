@@ -1,113 +1,104 @@
-# Tokyo Box
+# Tokyo Box - Sistema de Música para FiveM
 
-Um sistema avançado de música para FiveM com suporte a múltiplos frameworks e recursos modernos.
+![Tokyo Box](https://i.imgur.com/your-image.png)
 
-## 🚀 Recursos
+## 📝 Descrição
+Tokyo Box é um sistema avançado de música para servidores FiveM, permitindo que os jogadores reproduzam músicas do YouTube em tempo real. Desenvolvido com foco em performance e facilidade de uso.
 
-- 🎵 Reprodução de música via YouTube
-- 🎨 Temas personalizáveis (dark/light)
-- 🌍 Suporte a múltiplos idiomas
-- 💾 Sistema de playlists salvas
-- 🔄 Cache inteligente
-- 🔔 Sistema de notificações
-- 🛡️ Suporte a múltiplos frameworks (QBCore, ESX, OX Core)
-- 📱 Interface moderna e responsiva
+## ✨ Características
+- Reprodução de músicas do YouTube
+- Sistema de playlists
+- Controle de volume
+- Interface moderna e responsiva
+- Suporte a múltiplos idiomas
+- Integração com QBCore
+- Sistema de permissões
+- Cache de músicas
+- Notificações personalizáveis
 
-## 📋 Requisitos
+## 🚀 Instalação
 
+### Requisitos
 - FiveM Server
-- Framework suportado (QBCore, ESX ou OX Core)
-- oxmysql (opcional, para persistência de dados)
+- QBCore Framework
+- oxmysql
+- YouTube API Key
 
-## ⚙️ Instalação
-
-1. Clone o repositório:
-```bash
-git clone https://github.com/seu-usuario/tokyo-box.git
-```
-
-2. Copie a pasta `tokyo-box` para seu diretório de recursos
-
+### Passos
+1. Baixe o recurso
+2. Coloque na pasta `resources`
 3. Adicione ao seu `server.cfg`:
 ```cfg
-ensure tokyo-box
+ensure oxmysql
+ensure qb-core
+ensure tokyo_box
 ```
 
-4. Configure sua chave da API do YouTube em `config.lua`
+4. Configure a chave da API do YouTube:
+```cfg
+set TOKYO_BOX_YOUTUBE_API_KEY "sua_chave_aqui"
+```
+
+## ⚙️ Configuração
+O arquivo `config.lua` contém todas as configurações do recurso:
+
+```lua
+Config = {
+    Framework = 'qb-core',
+    YouTube = {
+        apiKey = 'sua_chave_aqui',
+        quotaLimit = 10000
+    },
+    -- ... outras configurações
+}
+```
 
 ## 🎮 Uso
+- `/music [url]` - Reproduz uma música
+- `/playlist [nome]` - Gerencia playlists
+- `/volume [0-100]` - Ajusta o volume
 
-- Comando: `/tokyobox`
-- Tecla padrão: `F7`
+## 🔧 Comandos
+| Comando | Descrição |
+|---------|-----------|
+| `/music` | Reproduz uma música do YouTube |
+| `/playlist` | Gerencia suas playlists |
+| `/volume` | Ajusta o volume da música |
 
-## 🔧 Configuração
+## 🌐 Idiomas Suportados
+- Português (Brasil)
+- Inglês (EUA)
 
-Todas as configurações podem ser ajustadas no arquivo `config.lua`:
-
-- Framework
-- API do YouTube
-- UI
-- Player
-- Permissões
-- Comandos
-- Notificações
-- Banco de dados
-- Cache
-- Debug
-- Teclas
-- Temas
-- Idiomas
-
-## 📦 Estrutura do Projeto
-
-```
-tokyo-box/
-├── client/
-│   ├── main.lua
-│   ├── commands.lua
-│   ├── events.lua
-│   ├── locale.lua
-│   ├── notification.lua
-│   ├── nui.lua
-│   ├── theme.lua
-│   └── utils.lua
-├── server/
-│   ├── main.lua
-│   ├── commands.lua
-│   ├── database.lua
-│   ├── events.lua
-│   ├── init.lua
-│   ├── youtube_api.lua
-│   └── check_dependencies.lua
-├── html/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-├── locales/
-│   ├── pt-BR.lua
-│   └── en-US.lua
-├── config.lua
-└── fxmanifest.lua
-```
-
-## 🔄 Atualizações Recentes
-
-### v1.0.0
-- Implementação inicial
-- Sistema de cache
-- Sistema de notificações
-- Temas personalizáveis
-- Playlists salvas
-- Suporte a múltiplos frameworks
+## 📦 Dependências
+- qb-core
+- oxmysql
 
 ## 🤝 Contribuição
-
 Contribuições são bem-vindas! Por favor, leia o [CONTRIBUTING.md](CONTRIBUTING.md) para detalhes sobre nosso código de conduta e o processo para enviar pull requests.
 
-## 📝 Licença
-
+## 📄 Licença
 Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE.md](LICENSE.md) para detalhes.
 
-## 📞 Suporte
+## 👥 Autores
+- **thugdacake** - *Desenvolvimento inicial*
 
-Para suporte, abra uma issue no GitHub ou entre em contato através do Discord.
+## 🙏 Agradecimentos
+- QBCore Framework
+- oxmysql
+- Comunidade FiveM
+
+## 📞 Suporte
+- Discord: [Link do Discord]
+- Issues: [GitHub Issues]
+
+## 🔄 Atualizações
+Veja o [CHANGELOG.md](CHANGELOG.md) para informações sobre as atualizações.
+
+## ⚠️ Problemas Conhecidos
+- Nenhum problema conhecido no momento
+
+## 🔜 Próximas Atualizações
+- [ ] Sistema de rádio
+- [ ] Integração com Spotify
+- [ ] Mais temas de UI
+- [ ] Sistema de votação para músicas
