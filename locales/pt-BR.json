@@ -1,0 +1,187 @@
+{
+    "common": {
+        "play": "Tocar",
+        "pause": "Pausar",
+        "stop": "Parar",
+        "next": "Próxima",
+        "prev": "Anterior",
+        "volume": "Volume",
+        "search": "Buscar",
+        "add": "Adicionar",
+        "remove": "Remover",
+        "save": "Salvar",
+        "cancel": "Cancelar",
+        "close": "Fechar",
+        "minimize": "Minimizar",
+        "maximize": "Maximizar"
+    },
+    "player": {
+        "now_playing": "Tocando agora",
+        "no_track": "Nenhuma música tocando",
+        "select_track": "Selecione uma música",
+        "volume_up": "Aumentar volume",
+        "volume_down": "Diminuir volume",
+        "mute": "Mutar",
+        "unmute": "Desmutar",
+        "volume": "Volume",
+        "play": "Reproduzir",
+        "pause": "Pausar",
+        "next": "Próxima",
+        "previous": "Anterior",
+        "shuffle": "Aleatório",
+        "repeat": "Repetir"
+    },
+    "playlist": {
+        "title": "Playlist",
+        "create": "Criar playlist",
+        "delete": "Deletar playlist",
+        "add_track": "Adicionar à playlist",
+        "remove_track": "Remover da playlist",
+        "empty": "Playlist vazia",
+        "name_placeholder": "Nome da playlist",
+        "cover_placeholder": "URL da capa (opcional)",
+        "add": "Adicionar à playlist",
+        "remove": "Remover da playlist",
+        "clear": "Limpar playlist",
+        "save": "Salvar playlist",
+        "load": "Carregar playlist"
+    },
+    "search": {
+        "placeholder": "Buscar música...",
+        "button": "Buscar",
+        "noResults": "Nenhum resultado encontrado",
+        "error": "Erro ao buscar músicas"
+    },
+    "favorites": {
+        "title": "Favoritos",
+        "add": "Adicionar aos favoritos",
+        "remove": "Remover dos favoritos",
+        "empty": "Nenhum favorito"
+    },
+    "settings": {
+        "title": "Configurações",
+        "ui_scale": "Escala da interface",
+        "theme": {
+            "title": "Tema",
+            "dark": "Escuro",
+            "light": "Claro"
+        },
+        "language": {
+            "title": "Idioma",
+            "pt-BR": "Português (Brasil)",
+            "en-US": "English (US)"
+        },
+        "notifications": "Notificações",
+        "bluetooth": "Bluetooth",
+        "debug": "Modo debug",
+        "volume": {
+            "title": "Volume padrão",
+            "min": "Mínimo",
+            "max": "Máximo"
+        }
+    },
+    "notifications": {
+        "playlist_created": "Playlist criada com sucesso",
+        "playlist_deleted": "Playlist deletada com sucesso",
+        "track_added": "Música adicionada à playlist",
+        "track_removed": "Música removida da playlist",
+        "favorite_added": "Adicionado aos favoritos",
+        "favorite_removed": "Removido dos favoritos",
+        "error": {
+            "invalidQuery": "Busca inválida",
+            "invalidVolume": "Volume inválido",
+            "apiError": "Erro na API",
+            "networkError": "Erro de rede",
+            "playlistError": "Erro ao manipular playlist",
+            "settingsError": "Erro ao salvar configurações"
+        },
+        "success": {
+            "playlistSaved": "Playlist salva com sucesso",
+            "playlistLoaded": "Playlist carregada com sucesso",
+            "playlistCleared": "Playlist limpa com sucesso",
+            "settingsSaved": "Configurações salvas com sucesso"
+        },
+        "warning": "Atenção",
+        "info": "Informação"
+    },
+    "errors": {
+        "database": "Erro no banco de dados",
+        "youtube_api": "Erro na API do YouTube",
+        "permission": "Sem permissão",
+        "invalid_input": "Entrada inválida",
+        "network": "Erro de conexão",
+        "unknown": "Erro desconhecido"
+    },
+    "ui": {
+        "title": "Tokyo Box",
+        "search": {
+            "placeholder": "Buscar música...",
+            "no_results": "Nenhum resultado encontrado",
+            "error": "Erro ao buscar"
+        },
+        "player": {
+            "play": "Tocar",
+            "pause": "Pausar",
+            "stop": "Parar",
+            "volume": "Volume",
+            "mute": "Mutar",
+            "unmute": "Desmutar"
+        },
+        "playlist": {
+            "title": "Playlist",
+            "add": "Adicionar",
+            "remove": "Remover",
+            "empty": "Playlist vazia",
+            "create": "Criar playlist",
+            "delete": "Deletar playlist",
+            "name": "Nome da playlist",
+            "created": "Playlist criada",
+            "deleted": "Playlist deletada",
+            "error": "Erro ao gerenciar playlist"
+        },
+        "favorites": {
+            "title": "Favoritos",
+            "add": "Adicionar aos favoritos",
+            "remove": "Remover dos favoritos",
+            "empty": "Nenhum favorito",
+            "added": "Adicionado aos favoritos",
+            "removed": "Removido dos favoritos"
+        },
+        "controls": {
+            "minimize": "Minimizar",
+            "maximize": "Maximizar",
+            "close": "Fechar",
+            "settings": "Configurações"
+        }
+    },
+    "commands": {
+        "main": {
+            "description": "Abre o menu Tokyo Box",
+            "usage": "/tokyobox"
+        },
+        "spawnBox": {
+            "description": "Spawna uma caixa de som",
+            "usage": "/tokyobox_spawnBox",
+            "console_warning": "Este comando deve ser usado no jogo"
+        },
+        "btToggle": {
+            "description": "Alterna modo Bluetooth",
+            "usage": "/tokyobox_btToggle",
+            "console_warning": "Este comando deve ser usado no jogo"
+        },
+        "lang": {
+            "description": "Muda o idioma",
+            "usage": "/tokyobox_lang [idioma]",
+            "current": "Idioma atual: %s",
+            "changed": "Idioma alterado para: %s",
+            "invalid": "Idioma inválido. Use: %s"
+        },
+        "theme": {
+            "description": "Muda o tema",
+            "usage": "/tokyobox_theme [tema]",
+            "current": "Tema atual: %s",
+            "changed": "Tema alterado para: %s",
+            "invalid": "Tema inválido. Use: %s"
+        }
+    }
+} 

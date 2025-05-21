@@ -1,0 +1,60 @@
+{
+    "search": {
+        "placeholder": "Buscar música...",
+        "loading": "Buscando...",
+        "no_results": "Nenhum resultado encontrado",
+        "error": "Erro ao buscar músicas"
+    },
+    "common": {
+        "minimize": "Minimizar",
+        "close": "Fechar",
+        "play": "Reproduzir",
+        "pause": "Pausar",
+        "stop": "Parar",
+        "volume": "Volume"
+    },
+    "playlist": {
+        "title": "Playlist",
+        "add_track": "Adicionar à playlist",
+        "empty": "Playlist vazia",
+        "remove": "Remover da playlist"
+    },
+    "errors": {
+        "unknown": "Ocorreu um erro inesperado",
+        "network": "Erro de conexão",
+        "permission": "Sem permissão"
+    },
+    "error": {
+        "invalid_input": "Entrada inválida",
+        "invalid_permission": "Sem permissão",
+        "invalid_volume": "Volume inválido (0-100)",
+        "invalid_mode": "Modo inválido (none/one/all)",
+        "api_error": "Erro na API do YouTube",
+        "network_error": "Erro de rede",
+        "cache_error": "Erro no cache"
+    },
+    "success": {
+        "config_reloaded": "Configuração recarregada",
+        "cache_cleared": "Cache limpo",
+        "volume_set": "Volume ajustado para %s",
+        "track_played": "Tocando: %s",
+        "track_paused": "Música pausada",
+        "track_resumed": "Música retomada",
+        "track_stopped": "Música parada",
+        "track_shuffled": "Playlist embaralhada",
+        "track_repeated": "Modo de repetição: %s",
+        "track_muted": "Música mutada",
+        "track_unmuted": "Música desmutada"
+    },
+    "info": {
+        "command_usage": "Uso: %s",
+        "command_help": "Ajuda: %s",
+        "command_permissions": "Permissões: %s",
+        "command_volume": "Volume: %s",
+        "command_mode": "Modo: %s",
+        "command_track": "Faixa: %s",
+        "command_playlist": "Playlist: %s",
+        "command_cache": "Cache: %s",
+        "command_config": "Config: %s"
+    }
+} 

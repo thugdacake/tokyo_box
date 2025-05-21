@@ -1,0 +1,180 @@
+{
+    "common": {
+        "play": "Play",
+        "pause": "Pause",
+        "stop": "Stop",
+        "next": "Next",
+        "prev": "Previous",
+        "volume": "Volume",
+        "search": "Search",
+        "add": "Add",
+        "remove": "Remove",
+        "save": "Save",
+        "cancel": "Cancel",
+        "close": "Close",
+        "minimize": "Minimize",
+        "maximize": "Maximize"
+    },
+    "player": {
+        "now_playing": "Now Playing",
+        "no_track": "No track playing",
+        "select_track": "Select a track",
+        "volume_up": "Volume Up",
+        "volume_down": "Volume Down",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "shuffle": "Shuffle",
+        "repeat": "Repeat"
+    },
+    "playlist": {
+        "title": "Playlist",
+        "create": "Create Playlist",
+        "delete": "Delete Playlist",
+        "add_track": "Add to Playlist",
+        "remove_track": "Remove from Playlist",
+        "empty": "Empty Playlist",
+        "name_placeholder": "Playlist Name",
+        "cover_placeholder": "Cover URL (optional)",
+        "clear": "Clear playlist",
+        "save": "Save playlist",
+        "load": "Load playlist"
+    },
+    "search": {
+        "placeholder": "Search music...",
+        "button": "Search",
+        "noResults": "No results found",
+        "error": "Error searching for music"
+    },
+    "favorites": {
+        "title": "Favorites",
+        "add": "Add to Favorites",
+        "remove": "Remove from Favorites",
+        "empty": "No favorites"
+    },
+    "settings": {
+        "title": "Settings",
+        "ui_scale": "UI Scale",
+        "theme": {
+            "title": "Theme",
+            "dark": "Dark",
+            "light": "Light"
+        },
+        "language": {
+            "title": "Language",
+            "pt-BR": "Portuguese (Brazil)",
+            "en-US": "English (US)"
+        },
+        "notifications": "Notifications",
+        "bluetooth": "Bluetooth",
+        "debug": "Debug Mode",
+        "volume": {
+            "title": "Default volume",
+            "min": "Minimum",
+            "max": "Maximum"
+        }
+    },
+    "notifications": {
+        "playlist_created": "Playlist created successfully",
+        "playlist_deleted": "Playlist deleted successfully",
+        "track_added": "Track added to playlist",
+        "track_removed": "Track removed from playlist",
+        "favorite_added": "Added to favorites",
+        "favorite_removed": "Removed from favorites",
+        "error": {
+            "invalidQuery": "Invalid search",
+            "invalidVolume": "Invalid volume",
+            "apiError": "API error",
+            "networkError": "Network error",
+            "playlistError": "Error handling playlist",
+            "settingsError": "Error saving settings"
+        },
+        "success": {
+            "playlistSaved": "Playlist saved successfully",
+            "playlistLoaded": "Playlist loaded successfully",
+            "playlistCleared": "Playlist cleared successfully",
+            "settingsSaved": "Settings saved successfully"
+        },
+        "warning": "Warning",
+        "info": "Information"
+    },
+    "errors": {
+        "database": "Database error",
+        "youtube_api": "YouTube API error",
+        "permission": "No permission",
+        "invalid_input": "Invalid input",
+        "network": "Network error",
+        "unknown": "Unknown error"
+    },
+    "ui": {
+        "title": "Tokyo Box",
+        "search": {
+            "placeholder": "Search for music...",
+            "no_results": "No results found",
+            "error": "Error searching"
+        },
+        "player": {
+            "play": "Play",
+            "pause": "Pause",
+            "stop": "Stop",
+            "volume": "Volume",
+            "mute": "Mute",
+            "unmute": "Unmute"
+        },
+        "playlist": {
+            "title": "Playlist",
+            "add": "Add",
+            "remove": "Remove",
+            "empty": "Empty playlist",
+            "create": "Create playlist",
+            "delete": "Delete playlist",
+            "name": "Playlist name",
+            "created": "Playlist created",
+            "deleted": "Playlist deleted",
+            "error": "Error managing playlist"
+        },
+        "favorites": {
+            "title": "Favorites",
+            "add": "Add to favorites",
+            "remove": "Remove from favorites",
+            "empty": "No favorites",
+            "added": "Added to favorites",
+            "removed": "Removed from favorites"
+        },
+        "controls": {
+            "minimize": "Minimize",
+            "maximize": "Maximize",
+            "close": "Close",
+            "settings": "Settings"
+        }
+    },
+    "commands": {
+        "main": {
+            "description": "Opens Tokyo Box menu",
+            "usage": "/tokyobox"
+        },
+        "spawnBox": {
+            "description": "Spawns a sound box",
+            "usage": "/tokyobox_spawnBox",
+            "console_warning": "This command must be used in-game"
+        },
+        "btToggle": {
+            "description": "Toggles Bluetooth mode",
+            "usage": "/tokyobox_btToggle",
+            "console_warning": "This command must be used in-game"
+        },
+        "lang": {
+            "description": "Changes language",
+            "usage": "/tokyobox_lang [language]",
+            "current": "Current language: %s",
+            "changed": "Language changed to: %s",
+            "invalid": "Invalid language. Use: %s"
+        },
+        "theme": {
+            "description": "Changes theme",
+            "usage": "/tokyobox_theme [theme]",
+            "current": "Current theme: %s",
+            "changed": "Theme changed to: %s",
+            "invalid": "Invalid theme. Use: %s"
+        }
+    }
+} 
